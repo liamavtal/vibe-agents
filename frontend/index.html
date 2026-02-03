@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vibe Agents - AI Coding Platform</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <div class="app">
+        <!-- Header -->
+        <header class="header">
+            <h1>🤖 Vibe Agents</h1>
+            <p class="tagline">Describe it. Watch it build.</p>
+        </header>
+
+        <!-- Main content area -->
+        <main class="main">
+            <!-- Left panel: Agent Theater -->
+            <section class="panel agent-theater">
+                <h2>Agent Theater</h2>
+                <div class="status-bar">
+                    <span class="status-indicator" id="status-indicator"></span>
+                    <span id="status-text">Ready</span>
+                </div>
+                <div class="agent-feed" id="agent-feed">
+                    <div class="welcome-message">
+                        <p>👋 Enter a prompt below to start building.</p>
+                        <p>Watch as multiple AI agents collaborate to create your software!</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Right panel: Code Output -->
+            <section class="panel code-panel">
+                <h2>Generated Code</h2>
+                <div class="file-tabs" id="file-tabs"></div>
+                <pre class="code-view" id="code-view"><code>// Your generated code will appear here</code></pre>
+            </section>
+        </main>
+
+        <!-- Input area -->
+        <footer class="input-area">
+            <form id="build-form">
+                <input
+                    type="text"
+                    id="prompt-input"
+                    placeholder="Describe what you want to build... (e.g., 'Create a todo app with local storage')"
+                    autocomplete="off"
+                >
+                <button type="submit" id="build-btn">
+                    <span class="btn-text">Build</span>
+                    <span class="btn-loading" hidden>Building...</span>
+                </button>
+            </form>
+        </footer>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
