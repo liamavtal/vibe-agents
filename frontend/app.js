@@ -1,6 +1,6 @@
 /**
  * Vibe Agents - Frontend Application
- * Real-time multi-agent coding platform UI
+ * Conversational AI coding platform with smart agent routing
  */
 
 class VibeAgents {
@@ -9,57 +9,67 @@ class VibeAgents {
         this.files = {};
         this.testFiles = {};
         this.currentFile = null;
-        this.buildStartTime = null;
+        this.isProcessing = false;
+        this.useFullPipeline = false;  // Toggle for full pipeline vs smart routing
 
         // DOM elements
-        this.form = document.getElementById('build-form');
-        this.input = document.getElementById('prompt-input');
-        this.buildBtn = document.getElementById('build-btn');
+        this.form = document.getElementById('chat-form');
+        this.input = document.getElementById('chat-input');
+        this.sendBtn = document.getElementById('send-btn');
+        this.clearBtn = document.getElementById('clear-btn');
+        this.modeToggle = document.getElementById('mode-toggle');
         this.agentFeed = document.getElementById('agent-feed');
         this.fileTabs = document.getElementById('file-tabs');
         this.codeView = document.getElementById('code-view');
         this.statusIndicator = document.getElementById('status-indicator');
         this.statusText = document.getElementById('status-text');
+        this.panelTitle = document.getElementById('panel-title');
+        this.activeAgentBadge = document.getElementById('active-agent');
 
         this.init();
     }
 
     init() {
         this.connect();
+
+        // Form submit
         this.form.addEventListener('submit', (e) => {
             e.preventDefault();
-            this.startBuild();
+            this.sendMessage();
+        });
+
+        // Clear button
+        this.clearBtn.addEventListener('click', () => {
+            this.clearConversation();
+        });
+
+        // Mode toggle
+        this.modeToggle.addEventListener('change', (e) => {
+            this.useFullPipeline = e.target.checked;
+            this.updateModeUI();
         });
 
         // Example prompts
-        this.addExamplePrompts();
+        document.querySelectorAll('.example-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const prompt = btn.dataset.prompt;
+                if (prompt) {
+                    this.input.value = prompt;
+                    this.input.focus();
+                }
+            });
+        });
     }
 
-    addExamplePrompts() {
-        const examples = [
-            "Create a simple calculator with add, subtract, multiply, divide",
-            "Build a todo list app with local storage",
-            "Make a password generator with customizable length and characters",
-            "Create a countdown timer with start, pause, reset"
-        ];
-
-        const welcomeDiv = this.agentFeed.querySelector('.welcome-message');
-        if (welcomeDiv) {
-            const examplesHtml = `
-                <p style="margin-top: 1rem; font-size: 0.875rem;">Try one of these:</p>
-                <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem;">
-                    ${examples.map(ex => `
-                        <button class="example-btn" onclick="app.useExample('${ex}')">${ex.substring(0, 40)}...</button>
-                    `).join('')}
-                </div>
-            `;
-            welcomeDiv.innerHTML += examplesHtml;
+    updateModeUI() {
+        const toggleText = this.modeToggle.parentElement.querySelector('.toggle-text');
+        if (this.useFullPipeline) {
+            toggleText.textContent = 'Full Pipeline';
+            this.panelTitle.textContent = 'Agent Theater';
+        } else {
+            toggleText.textContent = 'Smart Routing';
+            this.panelTitle.textContent = 'Conversation';
         }
-    }
-
-    useExample(text) {
-        this.input.value = text;
-        this.input.focus();
     }
 
     connect() {
@@ -70,7 +80,7 @@ class VibeAgents {
 
         this.ws.onopen = () => {
             console.log('Connected to Vibe Agents');
-            this.setStatus('ready', 'Connected');
+            this.setStatus('ready', 'Ready to chat');
         };
 
         this.ws.onclose = () => {
@@ -95,42 +105,102 @@ class VibeAgents {
             this.statusIndicator.classList.add('active');
         } else if (state === 'error') {
             this.statusIndicator.style.background = 'var(--error)';
+        } else {
+            this.statusIndicator.style.background = '';
         }
         this.statusText.textContent = text;
     }
 
-    startBuild() {
-        const prompt = this.input.value.trim();
-        if (!prompt || !this.ws) return;
+    showActiveAgent(agent) {
+        if (agent) {
+            this.activeAgentBadge.textContent = agent;
+            this.activeAgentBadge.hidden = false;
+            this.activeAgentBadge.className = `agent-badge ${agent.toLowerCase()}`;
+        } else {
+            this.activeAgentBadge.hidden = true;
+        }
+    }
 
-        // Clear previous state
+    sendMessage() {
+        const message = this.input.value.trim();
+        if (!message || !this.ws || this.isProcessing) return;
+
+        // Add user message to feed
+        this.addUserMessage(message);
+        this.input.value = '';
+
+        // Update UI
+        this.isProcessing = true;
+        this.setStatus('active', 'Thinking...');
+        this.sendBtn.disabled = true;
+        this.sendBtn.querySelector('.btn-text').hidden = true;
+        this.sendBtn.querySelector('.btn-loading').hidden = false;
+
+        // Send message
+        if (this.useFullPipeline) {
+            this.ws.send(JSON.stringify({
+                type: 'build',
+                prompt: message
+            }));
+        } else {
+            this.ws.send(JSON.stringify({
+                type: 'chat',
+                message: message
+            }));
+        }
+    }
+
+    clearConversation() {
+        if (this.ws) {
+            this.ws.send(JSON.stringify({ type: 'clear' }));
+        }
         this.files = {};
         this.testFiles = {};
         this.currentFile = null;
-        this.buildStartTime = Date.now();
-        this.agentFeed.innerHTML = '';
+        this.agentFeed.innerHTML = `
+            <div class="welcome-message">
+                <p>Hey! I'm your AI coding assistant.</p>
+                <p>Just tell me what you want to build, or ask me anything about code.</p>
+                <p class="hint">I'll intelligently decide when to use specialized agents.</p>
+                <div class="example-prompts">
+                    <button class="example-btn" data-prompt="Build me a todo app with local storage">Todo App</button>
+                    <button class="example-btn" data-prompt="Write a function to validate email addresses">Validate Email</button>
+                    <button class="example-btn" data-prompt="How does this system work?">How it works</button>
+                </div>
+            </div>
+        `;
         this.fileTabs.innerHTML = '';
-        this.codeView.innerHTML = '<code>// Building...</code>';
+        this.codeView.innerHTML = '<code>// Your generated code will appear here</code>';
+        this.setStatus('ready', 'Ready to chat');
 
-        // Update UI
-        this.setStatus('active', 'Building...');
-        this.buildBtn.disabled = true;
-        this.buildBtn.querySelector('.btn-text').hidden = true;
-        this.buildBtn.querySelector('.btn-loading').hidden = false;
-
-        // Send build request
-        this.ws.send(JSON.stringify({
-            type: 'build',
-            prompt: prompt
-        }));
-
-        this.addSystemMessage(`🚀 Starting build: "${prompt}"`);
+        // Re-attach example button handlers
+        document.querySelectorAll('.example-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const prompt = btn.dataset.prompt;
+                if (prompt) {
+                    this.input.value = prompt;
+                    this.input.focus();
+                }
+            });
+        });
     }
 
     handleMessage(message) {
         const { type, data } = message;
 
         switch (type) {
+            case 'routing':
+                this.setStatus('active', data.message || 'Analyzing...');
+                break;
+
+            case 'route_decision':
+                this.showRouteDecision(data);
+                break;
+
+            case 'chat_response':
+                this.handleChatResponse(data);
+                break;
+
             case 'status':
                 this.setStatus('active', data);
                 break;
@@ -141,6 +211,7 @@ class VibeAgents {
 
             case 'agent_message':
                 this.addAgentMessage(data);
+                this.showActiveAgent(data.agent);
                 break;
 
             case 'plan_ready':
@@ -154,26 +225,15 @@ class VibeAgents {
             case 'file_created':
             case 'file_updated':
                 this.addFileMessage(data, type === 'file_updated');
-                break;
-
-            case 'file_saved':
-                // Silent - just update internal state
-                break;
-
-            case 'executing':
-                this.addExecutionMessage(data);
+                // Store the file
+                if (data.path && data.code) {
+                    this.files[data.path] = data.code;
+                    this.renderFileTabs();
+                }
                 break;
 
             case 'execution_result':
                 this.showExecutionResult(data);
-                break;
-
-            case 'lint_error':
-                this.addLintError(data);
-                break;
-
-            case 'installing_deps':
-                this.addSystemMessage(`📦 Installing dependencies: ${data.join(', ')}`);
                 break;
 
             case 'debug_attempt':
@@ -184,12 +244,8 @@ class VibeAgents {
                 this.addSuccessMessage(data);
                 break;
 
-            case 'debug_failed':
-            case 'debug_exhausted':
-                this.addWarningMessage(data);
-                break;
-
             case 'fix_applied':
+            case 'fix_suggested':
                 this.addFixMessage(data);
                 break;
 
@@ -206,21 +262,131 @@ class VibeAgents {
                 break;
 
             case 'warning':
+            case 'debug_failed':
+            case 'debug_exhausted':
                 this.addWarningMessage(data);
                 break;
 
             case 'error':
                 this.addErrorMessage(data);
+                this.resetUI();
                 break;
 
             case 'build_complete':
                 this.handleBuildComplete(data);
                 break;
 
-            case 'complete':
-                this.setStatus('ready', 'Complete!');
+            case 'cleared':
+                // Already handled locally
                 break;
+
+            default:
+                console.log('Unknown message type:', type, data);
         }
+    }
+
+    showRouteDecision(data) {
+        const actionEmojis = {
+            'CONVERSATION': '💬',
+            'BUILD': '🏗️',
+            'CODE_ONLY': '💻',
+            'FIX': '🔧',
+            'REVIEW': '👀',
+            'TEST': '🧪'
+        };
+
+        const emoji = actionEmojis[data.action] || '🤔';
+
+        // Only show for non-conversation routes
+        if (data.action !== 'CONVERSATION') {
+            const el = document.createElement('div');
+            el.className = 'route-decision';
+            el.innerHTML = `
+                <span class="route-action">${emoji} ${data.action}</span>
+                <span class="route-confidence">${Math.round(data.confidence * 100)}% confident</span>
+            `;
+            this.agentFeed.appendChild(el);
+            this.scrollFeed();
+        }
+    }
+
+    handleChatResponse(data) {
+        this.resetUI();
+
+        if (data.type === 'conversation') {
+            this.addAssistantMessage(data.response);
+        } else if (data.type === 'code') {
+            if (data.success && data.code) {
+                this.files[data.file_path] = data.code;
+                this.renderFileTabs();
+                this.selectFile(data.file_path);
+                this.addAssistantMessage(data.explanation || `Created ${data.file_path}`);
+            } else {
+                this.addAssistantMessage(data.raw_response || 'Something went wrong.');
+            }
+        } else if (data.type === 'build') {
+            this.handleBuildComplete(data);
+        } else if (data.type === 'fix') {
+            this.addAssistantMessage(data.diagnosis || 'Applied fix.');
+        } else if (data.type === 'review') {
+            if (data.success) {
+                this.showReview({
+                    status: data.verdict,
+                    summary: data.summary,
+                    issues: data.issues
+                });
+            }
+        } else if (data.type === 'test') {
+            if (data.success && data.code) {
+                this.testFiles[data.file_path] = data.code;
+                this.renderFileTabs();
+                this.addAssistantMessage(data.description || `Created ${data.file_path}`);
+            }
+        } else if (data.type === 'error') {
+            this.addErrorMessage(data.error);
+        } else {
+            this.addAssistantMessage(JSON.stringify(data, null, 2));
+        }
+
+        this.showActiveAgent(null);
+    }
+
+    addUserMessage(text) {
+        // Remove welcome message if present
+        const welcome = this.agentFeed.querySelector('.welcome-message');
+        if (welcome) welcome.remove();
+
+        const el = document.createElement('div');
+        el.className = 'chat-message user-message';
+        el.innerHTML = `
+            <div class="message-header">
+                <span class="message-sender">You</span>
+            </div>
+            <div class="message-content">${this.escapeHtml(text)}</div>
+        `;
+        this.agentFeed.appendChild(el);
+        this.scrollFeed();
+    }
+
+    addAssistantMessage(text) {
+        const el = document.createElement('div');
+        el.className = 'chat-message assistant-message';
+        el.innerHTML = `
+            <div class="message-header">
+                <span class="message-sender">Vibe</span>
+            </div>
+            <div class="message-content">${this.formatContent(text)}</div>
+        `;
+        this.agentFeed.appendChild(el);
+        this.scrollFeed();
+    }
+
+    resetUI() {
+        this.isProcessing = false;
+        this.sendBtn.disabled = false;
+        this.sendBtn.querySelector('.btn-text').hidden = false;
+        this.sendBtn.querySelector('.btn-loading').hidden = true;
+        this.setStatus('ready', 'Ready');
     }
 
     addPhaseIndicator(phase) {
@@ -257,7 +423,6 @@ class VibeAgents {
         const contentEl = document.createElement('div');
         contentEl.className = `agent-content ${msgType}`;
 
-        // Format content - truncate and highlight code blocks
         let displayContent = this.truncate(content, 800);
         displayContent = this.formatContent(displayContent);
         contentEl.innerHTML = displayContent;
@@ -275,7 +440,7 @@ class VibeAgents {
             <div class="task-progress">
                 <div class="task-progress-bar" style="width: ${(data.task_number / data.total) * 100}%"></div>
             </div>
-            <span class="task-label">📋 Task ${data.task_number}/${data.total}: ${data.title}</span>
+            <span class="task-label">Task ${data.task_number}/${data.total}: ${data.title}</span>
         `;
         this.agentFeed.appendChild(el);
         this.scrollFeed();
@@ -297,19 +462,6 @@ class VibeAgents {
         this.scrollFeed();
     }
 
-    addExecutionMessage(data) {
-        const el = document.createElement('div');
-        el.className = 'agent-message';
-        el.innerHTML = `
-            <div class="agent-header">
-                <span class="agent-name" style="color: var(--accent)">⚡ Executing</span>
-            </div>
-            <div class="agent-content">Running ${data.file} (${data.language})</div>
-        `;
-        this.agentFeed.appendChild(el);
-        this.scrollFeed();
-    }
-
     showExecutionResult(data) {
         const el = document.createElement('div');
         el.className = `execution-result ${data.success ? 'success' : 'error'}`;
@@ -319,19 +471,6 @@ class VibeAgents {
             </div>
             ${data.stdout ? `<pre class="execution-output">${this.escapeHtml(data.stdout)}</pre>` : ''}
             ${data.stderr ? `<pre class="execution-error">${this.escapeHtml(data.stderr)}</pre>` : ''}
-        `;
-        this.agentFeed.appendChild(el);
-        this.scrollFeed();
-    }
-
-    addLintError(data) {
-        const el = document.createElement('div');
-        el.className = 'agent-message lint-error';
-        el.innerHTML = `
-            <div class="agent-header">
-                <span class="agent-name" style="color: var(--warning)">⚠️ Lint Error: ${data.file}</span>
-            </div>
-            <pre class="agent-content" style="color: var(--error)">${this.escapeHtml(data.error)}</pre>
         `;
         this.agentFeed.appendChild(el);
         this.scrollFeed();
@@ -355,9 +494,9 @@ class VibeAgents {
         el.className = 'agent-message fix-applied';
         el.innerHTML = `
             <div class="agent-header">
-                <span class="agent-name" style="color: var(--success)">✨ Fix Applied: ${data.file}</span>
+                <span class="agent-name" style="color: var(--success)">✨ Fix: ${data.file || 'code'}</span>
             </div>
-            <div class="agent-content">${data.diagnosis}</div>
+            <div class="agent-content">${data.diagnosis || 'Applied fix'}</div>
         `;
         this.agentFeed.appendChild(el);
         this.scrollFeed();
@@ -368,7 +507,7 @@ class VibeAgents {
         el.className = 'agent-message';
         el.innerHTML = `
             <div class="agent-header">
-                <span class="agent-name" style="color: var(--tester-color)">🧪 Tests Created: ${data.path}</span>
+                <span class="agent-name" style="color: var(--tester-color)">🧪 Tests: ${data.path}</span>
             </div>
             <div class="agent-content">${data.description || 'Test suite generated'}</div>
         `;
@@ -389,14 +528,6 @@ class VibeAgents {
         this.scrollFeed();
     }
 
-    addSystemMessage(text) {
-        const el = document.createElement('div');
-        el.className = 'system-message';
-        el.innerHTML = text;
-        this.agentFeed.appendChild(el);
-        this.scrollFeed();
-    }
-
     addSuccessMessage(text) {
         const el = document.createElement('div');
         el.className = 'system-message success';
@@ -408,7 +539,7 @@ class VibeAgents {
     addWarningMessage(text) {
         const el = document.createElement('div');
         el.className = 'system-message warning';
-        el.innerHTML = `⚠️ ${text}`;
+        el.innerHTML = `⚠️ ${typeof text === 'string' ? text : JSON.stringify(text)}`;
         this.agentFeed.appendChild(el);
         this.scrollFeed();
     }
@@ -462,9 +593,9 @@ class VibeAgents {
 
         el.innerHTML = `
             <div class="review-header">
-                ${statusIcon} Code Review: <strong>${review.status.toUpperCase()}</strong>
+                ${statusIcon} Review: <strong>${review.status?.toUpperCase() || 'COMPLETE'}</strong>
             </div>
-            <div class="review-summary">${review.summary}</div>
+            <div class="review-summary">${review.summary || ''}</div>
             ${issuesHtml}
         `;
         this.agentFeed.appendChild(el);
@@ -472,35 +603,24 @@ class VibeAgents {
     }
 
     handleBuildComplete(result) {
-        const duration = this.buildStartTime ?
-            ((Date.now() - this.buildStartTime) / 1000).toFixed(1) : '?';
-
-        // Re-enable button
-        this.buildBtn.disabled = false;
-        this.buildBtn.querySelector('.btn-text').hidden = false;
-        this.buildBtn.querySelector('.btn-loading').hidden = true;
+        this.resetUI();
 
         if (result.success) {
-            this.setStatus('ready', 'Build Complete!');
+            this.setStatus('ready', 'Complete!');
             this.files = result.files || {};
             this.testFiles = result.test_files || {};
             this.renderFileTabs();
 
-            // Show first file
             const firstFile = Object.keys(this.files)[0];
             if (firstFile) {
                 this.selectFile(firstFile);
             }
 
-            this.addSystemMessage(`
-                ✅ <strong>${result.project_name}</strong> built successfully in ${duration}s!
-                <br>Files: ${Object.keys(this.files).length} | Tests: ${Object.keys(this.testFiles).length}
-            `);
+            this.addSuccessMessage(`${result.project || 'Project'} built successfully!`);
         } else {
-            this.setStatus('error', 'Build Failed');
-            this.addErrorMessage(result.error || 'Unknown error');
+            this.setStatus('error', 'Failed');
+            this.addErrorMessage(result.error || 'Build failed');
 
-            // Still show partial files if any
             if (result.partial_files) {
                 this.files = result.partial_files;
                 this.renderFileTabs();
@@ -511,7 +631,6 @@ class VibeAgents {
     renderFileTabs() {
         this.fileTabs.innerHTML = '';
 
-        // Code files
         Object.keys(this.files).forEach(path => {
             const tab = document.createElement('button');
             tab.className = 'file-tab';
@@ -521,7 +640,6 @@ class VibeAgents {
             this.fileTabs.appendChild(tab);
         });
 
-        // Test files
         Object.keys(this.testFiles).forEach(path => {
             const tab = document.createElement('button');
             tab.className = 'file-tab test-file';
@@ -538,18 +656,17 @@ class VibeAgents {
             (this.testFiles[path] || '// Empty') :
             (this.files[path] || '// Empty');
 
-        // Update tabs
         document.querySelectorAll('.file-tab').forEach(tab => {
             tab.classList.toggle('active', tab.title === path);
         });
 
-        // Update code view with syntax highlighting hint
         const extension = path.split('.').pop();
         this.codeView.innerHTML = `<code class="language-${extension}">${this.escapeHtml(content)}</code>`;
     }
 
     getAgentEmoji(agent) {
         const emojis = {
+            'Router': '🧠',
             'Planner': '📋',
             'Coder': '💻',
             'Reviewer': '👀',
@@ -561,8 +678,9 @@ class VibeAgents {
 
     getAgentRole(agent) {
         const roles = {
-            'Planner': 'Technical Architect',
-            'Coder': 'Software Developer',
+            'Router': 'Coordinator',
+            'Planner': 'Architect',
+            'Coder': 'Developer',
             'Reviewer': 'Code Reviewer',
             'Tester': 'QA Engineer',
             'Debugger': 'Debug Specialist'
@@ -571,11 +689,8 @@ class VibeAgents {
     }
 
     formatContent(text) {
-        // Convert markdown code blocks to styled elements
         text = text.replace(/```(\w*)\n?([\s\S]*?)```/g, '<pre class="code-block"><code>$2</code></pre>');
-        // Convert inline code
         text = text.replace(/`([^`]+)`/g, '<code class="inline-code">$1</code>');
-        // Convert newlines
         text = text.replace(/\n/g, '<br>');
         return text;
     }
@@ -596,7 +711,7 @@ class VibeAgents {
     }
 }
 
-// Initialize app
+// Initialize
 document.addEventListener('DOMContentLoaded', () => {
     window.app = new VibeAgents();
 });

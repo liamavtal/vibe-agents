@@ -1,3 +1,4 @@
 from .engine import Orchestrator
+from .conversation import ConversationalOrchestrator
 
-__all__ = ["Orchestrator"]
+__all__ = ["Orchestrator", "ConversationalOrchestrator"]

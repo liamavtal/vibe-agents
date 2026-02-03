@@ -10,23 +10,43 @@
     <div class="app">
         <!-- Header -->
         <header class="header">
-            <h1>🤖 Vibe Agents</h1>
-            <p class="tagline">Describe it. Watch it build.</p>
+            <div class="header-content">
+                <h1>Vibe Agents</h1>
+                <p class="tagline">Talk naturally. Build intelligently.</p>
+            </div>
+            <div class="header-actions">
+                <button id="clear-btn" class="clear-btn" title="Clear conversation">Clear</button>
+                <div class="mode-toggle">
+                    <label class="toggle-label">
+                        <input type="checkbox" id="mode-toggle">
+                        <span class="toggle-text">Full Pipeline</span>
+                    </label>
+                </div>
+            </div>
         </header>
 
         <!-- Main content area -->
         <main class="main">
-            <!-- Left panel: Agent Theater -->
+            <!-- Left panel: Chat + Agent Theater -->
             <section class="panel agent-theater">
-                <h2>Agent Theater</h2>
+                <h2>
+                    <span id="panel-title">Conversation</span>
+                    <span class="agent-badge" id="active-agent" hidden></span>
+                </h2>
                 <div class="status-bar">
                     <span class="status-indicator" id="status-indicator"></span>
-                    <span id="status-text">Ready</span>
+                    <span id="status-text">Ready to chat</span>
                 </div>
                 <div class="agent-feed" id="agent-feed">
                     <div class="welcome-message">
-                        <p>👋 Enter a prompt below to start building.</p>
-                        <p>Watch as multiple AI agents collaborate to create your software!</p>
+                        <p>Hey! I'm your AI coding assistant.</p>
+                        <p>Just tell me what you want to build, or ask me anything about code.</p>
+                        <p class="hint">I'll intelligently decide when to use specialized agents.</p>
+                        <div class="example-prompts">
+                            <button class="example-btn" data-prompt="Build me a todo app with local storage">Todo App</button>
+                            <button class="example-btn" data-prompt="Write a function to validate email addresses">Validate Email</button>
+                            <button class="example-btn" data-prompt="How does this system work?">How it works</button>
+                        </div>
                     </div>
                 </div>
             </section>
@@ -41,16 +61,16 @@
 
         <!-- Input area -->
         <footer class="input-area">
-            <form id="build-form">
+            <form id="chat-form">
                 <input
                     type="text"
-                    id="prompt-input"
-                    placeholder="Describe what you want to build... (e.g., 'Create a todo app with local storage')"
+                    id="chat-input"
+                    placeholder="Say anything... (ask questions, request code, describe what to build)"
                     autocomplete="off"
                 >
-                <button type="submit" id="build-btn">
-                    <span class="btn-text">Build</span>
-                    <span class="btn-loading" hidden>Building...</span>
+                <button type="submit" id="send-btn">
+                    <span class="btn-text">Send</span>
+                    <span class="btn-loading" hidden>Thinking...</span>
                 </button>
             </form>
         </footer>
