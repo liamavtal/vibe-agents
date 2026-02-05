@@ -20,3 +20,14 @@ Thumbs.db
 # Project
 projects/
 *.log
+
+# Build artifacts
+*.egg-info/
+dist/
+build/
+
+# NSSM binary (downloaded at deploy time)
+deploy/nssm/
+
+# Service logs
+logs/

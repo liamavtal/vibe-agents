@@ -12,6 +12,7 @@ Security features:
 """
 
 import subprocess
+import sys
 import tempfile
 import os
 import shutil
@@ -54,6 +55,39 @@ class Sandbox:
         self.timeout = min(timeout, 300)  # Cap at 5 minutes
         self.max_output = min(max_output, 100000)  # Cap at 100KB
         self.work_dir: Optional[Path] = None
+
+    @staticmethod
+    def _python_cmd() -> str:
+        """Get the correct Python command for the current platform."""
+        return sys.executable
+
+    def _build_sandbox_env(self) -> dict:
+        """Build a restricted environment dict, cross-platform safe."""
+        if os.name == "nt":
+            # Windows: PATH needs system root for DLLs, plus Python
+            default_path = os.environ.get(
+                "PATH",
+                os.path.join(os.environ.get("SystemRoot", r"C:\Windows"), "system32")
+            )
+            env = {
+                "PATH": default_path,
+                "SYSTEMROOT": os.environ.get("SystemRoot", r"C:\Windows"),
+                "TEMP": os.environ.get("TEMP", str(self.work_dir) if self.work_dir else ""),
+                "TMP": os.environ.get("TMP", str(self.work_dir) if self.work_dir else ""),
+                "USERPROFILE": str(self.work_dir) if self.work_dir else "",
+                "PYTHONDONTWRITEBYTECODE": "1",
+                "PYTHONUNBUFFERED": "1",
+                "PYTHONPATH": str(self.work_dir) if self.work_dir else "",
+            }
+        else:
+            env = {
+                "PATH": os.environ.get("PATH", "/usr/local/bin:/usr/bin:/bin"),
+                "HOME": str(self.work_dir) if self.work_dir else "",
+                "PYTHONDONTWRITEBYTECODE": "1",
+                "PYTHONUNBUFFERED": "1",
+                "PYTHONPATH": str(self.work_dir) if self.work_dir else "",
+            }
+        return env
 
     def setup(self, project_name: str = "sandbox") -> Path:
         """Create a temporary working directory."""
@@ -172,14 +206,7 @@ class Sandbox:
                 capture_output=True,
                 text=True,
                 timeout=self.timeout,
-                env={
-                    "PATH": os.environ.get("PATH", "/usr/bin:/bin"),
-                    "HOME": str(self.work_dir),
-                    "PYTHONDONTWRITEBYTECODE": "1",
-                    "PYTHONUNBUFFERED": "1",
-                    # Restrict Python imports for security
-                    "PYTHONPATH": str(self.work_dir),
-                }
+                env=self._build_sandbox_env()
             )
 
             stdout = result.stdout[:self.max_output]
@@ -264,7 +291,7 @@ class Sandbox:
 
         # Get the relative path for the command
         rel_path = validated_path.relative_to(self.work_dir)
-        return self._run_command_safe(["python3", str(rel_path)])
+        return self._run_command_safe([self._python_cmd(), str(rel_path)])
 
     def run_node(self, script_path: str = "index.js") -> ExecutionResult:
         """Run a Node.js script in the sandbox."""
@@ -341,7 +368,7 @@ class Sandbox:
                 error=str(e)
             )
 
-        return self._run_command_safe(["python3", "-m", "py_compile", validated_path])
+        return self._run_command_safe([self._python_cmd(), "-m", "py_compile", validated_path])
 
     def lint_javascript(self, file_path: str = ".") -> ExecutionResult:
         """Run JavaScript syntax check."""
@@ -358,7 +385,9 @@ class Sandbox:
 
         return self._run_command_safe(["node", "--check", validated_path])
 
-    def run_tests(self, test_command: str = "python3 -m pytest -v") -> ExecutionResult:
+    def run_tests(self, test_command: Optional[str] = None) -> ExecutionResult:
+        if test_command is None:
+            test_command = f"{self._python_cmd()} -m pytest -v"
         """Run tests in the sandbox."""
         return self.run_command(test_command)
 

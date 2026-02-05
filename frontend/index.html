@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Vibe Agents - AI Coding Platform</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
     <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
@@ -15,6 +16,11 @@
                 <p class="tagline">Talk naturally. Build intelligently.</p>
             </div>
             <div class="header-actions">
+                <button id="theme-toggle" class="theme-toggle-btn" title="Toggle theme (Ctrl+D)">
+                    <svg class="theme-icon-dark" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+                    <svg class="theme-icon-light" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                </button>
+                <button id="projects-toggle" class="projects-toggle-btn" title="Toggle project browser">Projects</button>
                 <button id="clear-btn" class="clear-btn" title="Clear conversation">Clear</button>
                 <div class="mode-toggle">
                     <label class="toggle-label">
@@ -25,14 +31,54 @@
             </div>
         </header>
 
+        <!-- Session Tabs -->
+        <nav class="tab-bar" id="tab-bar">
+            <div class="tab-list" id="tab-list"></div>
+            <button class="tab-new-btn" id="tab-new-btn" title="New session">+</button>
+        </nav>
+
         <!-- Main content area -->
         <main class="main">
+            <!-- Project browser sidebar -->
+            <aside class="project-sidebar" id="project-sidebar" hidden>
+                <div class="sidebar-header">
+                    <h3>Projects</h3>
+                    <button class="sidebar-close" id="sidebar-close" title="Close sidebar">&times;</button>
+                </div>
+                <div class="project-list" id="project-list">
+                    <div class="project-list-empty">No projects yet. Start building!</div>
+                </div>
+            </aside>
+
             <!-- Left panel: Chat + Agent Theater -->
             <section class="panel agent-theater">
                 <h2>
                     <span id="panel-title">Conversation</span>
                     <span class="agent-badge" id="active-agent" hidden></span>
+                    <span class="project-badge" id="active-project-badge" hidden></span>
                 </h2>
+                <!-- Phase Timeline -->
+                <div class="phase-timeline" id="phase-timeline" hidden>
+                    <div class="phase-step" data-phase="Planning">
+                        <div class="phase-dot"></div>
+                        <span class="phase-label">Plan</span>
+                    </div>
+                    <div class="phase-connector"></div>
+                    <div class="phase-step" data-phase="Coding">
+                        <div class="phase-dot"></div>
+                        <span class="phase-label">Code</span>
+                    </div>
+                    <div class="phase-connector"></div>
+                    <div class="phase-step" data-phase="Reviewing">
+                        <div class="phase-dot"></div>
+                        <span class="phase-label">Review</span>
+                    </div>
+                    <div class="phase-connector"></div>
+                    <div class="phase-step" data-phase="Testing">
+                        <div class="phase-dot"></div>
+                        <span class="phase-label">Test</span>
+                    </div>
+                </div>
                 <div class="status-bar">
                     <span class="status-indicator" id="status-indicator"></span>
                     <span id="status-text">Ready to chat</span>
@@ -53,9 +99,22 @@
 
             <!-- Right panel: Code Output -->
             <section class="panel code-panel">
-                <h2>Generated Code</h2>
-                <div class="file-tabs" id="file-tabs"></div>
-                <pre class="code-view" id="code-view"><code>// Your generated code will appear here</code></pre>
+                <h2>
+                    <span>Generated Code</span>
+                    <button class="copy-code-btn" id="copy-code-btn" title="Copy code to clipboard">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                        <span>Copy</span>
+                    </button>
+                </h2>
+                <div class="code-panel-body">
+                    <div class="file-tree" id="file-tree">
+                        <div class="file-tree-empty">No files yet</div>
+                    </div>
+                    <div class="code-area">
+                        <div class="file-tabs" id="file-tabs"></div>
+                        <pre class="code-view" id="code-view"><code>// Your generated code will appear here</code></pre>
+                    </div>
+                </div>
             </section>
         </main>
 
@@ -76,6 +135,18 @@
         </footer>
     </div>
 
+    <!-- Toast notifications -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <!-- Keyboard shortcut hint (shown briefly on load) -->
+    <div class="shortcut-hint" id="shortcut-hint" hidden>
+        <span>Ctrl+Enter</span> Send &nbsp;
+        <span>Ctrl+N</span> New tab &nbsp;
+        <span>Ctrl+D</span> Theme &nbsp;
+        <span>Ctrl+L</span> Clear
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
     <script src="/static/app.js"></script>
 </body>
 </html>
