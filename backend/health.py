@@ -15,24 +15,26 @@ import subprocess
 import platform
 import time
 from pathlib import Path
+from backend import find_claude_cli
 from typing import Any
 
 
 def check_claude_cli() -> dict[str, Any]:
     """Check if Claude CLI is installed and accessible."""
+    claude_path = find_claude_cli()
+    if not claude_path:
+        return {"status": "error", "message": "Claude CLI not found"}
     try:
         result = subprocess.run(
-            ["claude", "--version"],
+            [claude_path, "--version"],
             capture_output=True,
             text=True,
             timeout=10,
         )
         if result.returncode == 0:
             version = result.stdout.strip() or result.stderr.strip()
-            return {"status": "ok", "version": version}
+            return {"status": "ok", "version": version, "path": claude_path}
         return {"status": "error", "message": f"Exit code {result.returncode}"}
-    except FileNotFoundError:
-        return {"status": "error", "message": "Claude CLI not found in PATH"}
     except subprocess.TimeoutExpired:
         return {"status": "error", "message": "Claude CLI timed out"}
     except Exception as e:

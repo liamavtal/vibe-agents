@@ -11,6 +11,8 @@ import json
 import os
 import re
 
+from backend import get_claude_cli
+
 
 class Agent(ABC):
     """
@@ -156,7 +158,7 @@ class Agent(ABC):
     def _build_streaming_args(self, prompt: str) -> list[str]:
         """Build CLI args for streaming mode (agents with tool access)."""
         args = [
-            "claude", "-p", prompt,
+            get_claude_cli(), "-p", prompt,
             "--verbose",
             "--output-format", "stream-json",
             "--model", self.model,
@@ -169,7 +171,7 @@ class Agent(ABC):
     def _build_json_args(self, prompt: str) -> list[str]:
         """Build CLI args for JSON output mode (text-only structured output)."""
         args = [
-            "claude", "-p", prompt,
+            get_claude_cli(), "-p", prompt,
             "--model", self.model,
             "--system-prompt", self.system_prompt,
             "--tools", "",
