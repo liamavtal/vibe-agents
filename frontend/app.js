@@ -1375,8 +1375,24 @@ class VibeAgents {
 
         this.resetUI(session);
 
+        // For conversation responses, update the last Router bubble instead of creating new message
         if (data.type === 'conversation') {
-            this.addAssistantMessage(data.response, session);
+            const routerBubbles = session.feedEl.querySelectorAll('.agent-message.router');
+            const lastRouterBubble = routerBubbles[routerBubbles.length - 1];
+            if (lastRouterBubble) {
+                const contentEl = lastRouterBubble.querySelector('.agent-content');
+                if (contentEl) {
+                    contentEl.innerHTML = this.formatContent(data.response || '');
+                    this.scrollFeed(session);
+                    if (session.id === this.activeSessionId) {
+                        this.showActiveAgent(null);
+                    }
+                    if (this.sidebarOpen) this.loadProjects();
+                    return;
+                }
+            }
+            // Fallback if no Router bubble found
+            this.addAssistantMessage(data.response, session, 'Router');
         } else if (data.type === 'code') {
             if (data.success) {
                 if (data.files && data.files.length > 0) {
@@ -1433,12 +1449,12 @@ class VibeAgents {
         this.scrollFeed(session);
     }
 
-    addAssistantMessage(text, session) {
+    addAssistantMessage(text, session, agentName = 'Router') {
         const el = document.createElement('div');
         el.className = 'chat-message assistant-message';
         el.innerHTML = `
             <div class="message-header">
-                <span class="message-sender">Vibe</span>
+                <span class="message-sender">${agentName}</span>
             </div>
             <div class="message-content">${this.formatContent(text)}</div>
         `;
