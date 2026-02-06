@@ -108,40 +108,43 @@
                     <button class="theater-close-btn" id="theater-close" title="Close theater">&times;</button>
                 </h2>
                 <div class="theater-stage">
-                    <!-- Agent positions -->
-                    <div class="theater-agent" data-agent="Router" style="top: 8%; left: 50%;">
+                    <!-- Office background with desks -->
+                    <div class="office-floor"></div>
+                    <div class="office-desk desk-1"></div>
+                    <div class="office-desk desk-2"></div>
+                    <div class="office-desk desk-3"></div>
+
+                    <!-- Agent characters with speech bubbles -->
+                    <div class="theater-agent" data-agent="Router" style="top: 15%; left: 50%;">
+                        <div class="agent-speech-bubble" id="bubble-Router"></div>
                         <img src="/static/avatars/router.png" alt="Router">
-                        <div class="agent-pulse"></div>
-                        <span class="agent-name">Router</span>
+                        <span class="agent-label">Router</span>
                     </div>
-                    <div class="theater-agent" data-agent="Planner" style="top: 40%; left: 20%;">
+                    <div class="theater-agent" data-agent="Planner" style="top: 45%; left: 18%;">
+                        <div class="agent-speech-bubble" id="bubble-Planner"></div>
                         <img src="/static/avatars/planner.png" alt="Planner">
-                        <div class="agent-pulse"></div>
-                        <span class="agent-name">Planner</span>
+                        <span class="agent-label">Planner</span>
                     </div>
-                    <div class="theater-agent" data-agent="Coder" style="top: 40%; left: 80%;">
+                    <div class="theater-agent" data-agent="Coder" style="top: 45%; left: 50%;">
+                        <div class="agent-speech-bubble" id="bubble-Coder"></div>
                         <img src="/static/avatars/coder.png" alt="Coder">
-                        <div class="agent-pulse"></div>
-                        <span class="agent-name">Coder</span>
+                        <span class="agent-label">Coder</span>
                     </div>
-                    <div class="theater-agent" data-agent="Reviewer" style="top: 75%; left: 15%;">
+                    <div class="theater-agent" data-agent="Reviewer" style="top: 45%; left: 82%;">
+                        <div class="agent-speech-bubble" id="bubble-Reviewer"></div>
                         <img src="/static/avatars/reviewer.png" alt="Reviewer">
-                        <div class="agent-pulse"></div>
-                        <span class="agent-name">Reviewer</span>
+                        <span class="agent-label">Reviewer</span>
                     </div>
-                    <div class="theater-agent" data-agent="Tester" style="top: 75%; left: 50%;">
+                    <div class="theater-agent" data-agent="Tester" style="top: 78%; left: 30%;">
+                        <div class="agent-speech-bubble" id="bubble-Tester"></div>
                         <img src="/static/avatars/tester.png" alt="Tester">
-                        <div class="agent-pulse"></div>
-                        <span class="agent-name">Tester</span>
+                        <span class="agent-label">Tester</span>
                     </div>
-                    <div class="theater-agent" data-agent="Debugger" style="top: 75%; left: 85%;">
+                    <div class="theater-agent" data-agent="Debugger" style="top: 78%; left: 70%;">
+                        <div class="agent-speech-bubble" id="bubble-Debugger"></div>
                         <img src="/static/avatars/debugger.png" alt="Debugger">
-                        <div class="agent-pulse"></div>
-                        <span class="agent-name">Debugger</span>
+                        <span class="agent-label">Debugger</span>
                     </div>
-                    <!-- Communication arrows -->
-                    <img src="/static/figures/left.png" class="theater-arrow arrow-left" id="arrow-left" hidden>
-                    <img src="/static/figures/right.png" class="theater-arrow arrow-right" id="arrow-right" hidden>
                 </div>
             </section>
 

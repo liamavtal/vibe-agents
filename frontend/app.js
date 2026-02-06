@@ -113,8 +113,6 @@ class VibeAgents {
         this.theaterToggleBtn = document.getElementById('theater-toggle');
         this.theaterCloseBtn = document.getElementById('theater-close');
         this.theaterAgents = document.querySelectorAll('.theater-agent');
-        this.arrowLeft = document.getElementById('arrow-left');
-        this.arrowRight = document.getElementById('arrow-right');
         this.theaterOpen = false;
         this.mainEl = document.querySelector('.main');
 
@@ -348,24 +346,31 @@ class VibeAgents {
         }
     }
 
-    setTheaterAgentActive(agentName, active = true) {
+    setTheaterAgentActive(agentName, active = true, message = null) {
         if (!this.theaterAgents) return;
 
         this.theaterAgents.forEach(el => {
             if (el.dataset.agent === agentName) {
                 if (active) {
                     el.classList.add('active');
+                    // Set speech bubble text
+                    const bubble = el.querySelector('.agent-speech-bubble');
+                    if (bubble && message) {
+                        bubble.textContent = message.length > 50 ? message.substring(0, 50) + '...' : message;
+                    } else if (bubble) {
+                        bubble.textContent = 'Thinking...';
+                    }
                 } else {
                     el.classList.remove('active');
                 }
             }
         });
+    }
 
-        // Show/hide arrows when agents are active
-        if (this.arrowLeft && this.arrowRight) {
-            const anyActive = document.querySelector('.theater-agent.active');
-            this.arrowLeft.hidden = !anyActive;
-            this.arrowRight.hidden = !anyActive;
+    updateTheaterBubble(agentName, text) {
+        const bubble = document.getElementById(`bubble-${agentName}`);
+        if (bubble) {
+            bubble.textContent = text.length > 60 ? text.substring(0, 60) + '...' : text;
         }
     }
 
@@ -1191,6 +1196,11 @@ class VibeAgents {
 
             case 'streaming':
                 this.appendStreamText(agent, content, session);
+                // Update theater speech bubble with latest text
+                if (session.currentStreamEl) {
+                    const fullText = session.currentStreamEl.textContent || '';
+                    this.updateTheaterBubble(agent, fullText);
+                }
                 break;
 
             case 'tool_use':
