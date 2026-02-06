@@ -108,6 +108,16 @@ class VibeAgents {
         this.toastContainer = document.getElementById('toast-container');
         this.shortcutHint = document.getElementById('shortcut-hint');
 
+        // Agent Theater elements
+        this.theaterOverlay = document.getElementById('agent-theater-overlay');
+        this.theaterToggleBtn = document.getElementById('theater-toggle');
+        this.theaterCloseBtn = document.getElementById('theater-close');
+        this.theaterChat = document.getElementById('theater-chat');
+        this.theaterAgents = document.querySelectorAll('.theater-agent');
+        this.arrowLeft = document.getElementById('arrow-left');
+        this.arrowRight = document.getElementById('arrow-right');
+        this.theaterOpen = false;
+
         this.init();
     }
 
@@ -197,6 +207,22 @@ class VibeAgents {
             this.copyCodeBtn.addEventListener('click', () => this.copyCurrentCode());
         }
 
+        // Agent Theater toggle
+        if (this.theaterToggleBtn) {
+            this.theaterToggleBtn.addEventListener('click', () => this.toggleTheater());
+        }
+        if (this.theaterCloseBtn) {
+            this.theaterCloseBtn.addEventListener('click', () => this.toggleTheater(false));
+        }
+        // Close theater on backdrop click
+        if (this.theaterOverlay) {
+            this.theaterOverlay.addEventListener('click', (e) => {
+                if (e.target.classList.contains('theater-backdrop')) {
+                    this.toggleTheater(false);
+                }
+            });
+        }
+
         // Keyboard shortcuts
         document.addEventListener('keydown', (e) => this.handleKeyboardShortcut(e));
 
@@ -249,6 +275,12 @@ class VibeAgents {
         } else if (ctrl && e.key === 'Tab') {
             e.preventDefault();
             this.cycleTab(e.shiftKey ? -1 : 1);
+        } else if (ctrl && e.key === 't') {
+            e.preventDefault();
+            this.toggleTheater();
+        } else if (e.key === 'Escape' && this.theaterOpen) {
+            e.preventDefault();
+            this.toggleTheater(false);
         }
     }
 
@@ -302,6 +334,100 @@ class VibeAgents {
             info: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>'
         };
         return icons[level] || icons.info;
+    }
+
+    // ==================== Agent Theater ====================
+
+    toggleTheater(show = null) {
+        if (!this.theaterOverlay) return;
+
+        this.theaterOpen = show !== null ? show : !this.theaterOpen;
+        this.theaterOverlay.hidden = !this.theaterOpen;
+
+        if (this.theaterOpen) {
+            // Clear and populate theater chat with current conversation
+            this.syncTheaterChat();
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = '';
+        }
+    }
+
+    setTheaterAgentActive(agentName, active = true) {
+        if (!this.theaterAgents) return;
+
+        this.theaterAgents.forEach(el => {
+            if (el.dataset.agent === agentName) {
+                if (active) {
+                    el.classList.add('active');
+                } else {
+                    el.classList.remove('active');
+                }
+            }
+        });
+
+        // Show/hide arrows when agents are active
+        if (this.arrowLeft && this.arrowRight) {
+            const anyActive = document.querySelector('.theater-agent.active');
+            this.arrowLeft.hidden = !anyActive;
+            this.arrowRight.hidden = !anyActive;
+        }
+    }
+
+    clearTheaterAgents() {
+        if (!this.theaterAgents) return;
+        this.theaterAgents.forEach(el => el.classList.remove('active'));
+        if (this.arrowLeft) this.arrowLeft.hidden = true;
+        if (this.arrowRight) this.arrowRight.hidden = true;
+    }
+
+    addTheaterMessage(agent, text) {
+        if (!this.theaterChat || !this.theaterOpen) return;
+
+        // Remove placeholder if exists
+        const placeholder = this.theaterChat.querySelector('.theater-chat-placeholder');
+        if (placeholder) placeholder.remove();
+
+        const avatarSrc = this.getAgentAvatar(agent);
+        const messageEl = document.createElement('div');
+        messageEl.className = 'theater-message';
+        messageEl.dataset.agent = agent;
+        messageEl.innerHTML = `
+            <img src="${avatarSrc}" alt="${agent}" class="theater-message-avatar">
+            <div class="theater-message-content">
+                <div class="theater-message-header">
+                    <span class="theater-message-agent">${agent}</span>
+                </div>
+                <div class="theater-message-text">${this.escapeHtml(text)}</div>
+            </div>
+        `;
+
+        this.theaterChat.appendChild(messageEl);
+        this.theaterChat.scrollTop = this.theaterChat.scrollHeight;
+    }
+
+    syncTheaterChat() {
+        // Sync theater chat with the current session's agent messages
+        if (!this.theaterChat) return;
+
+        const session = this.getActiveSession();
+        if (!session) return;
+
+        // Clear existing messages
+        this.theaterChat.innerHTML = '<div class="theater-chat-placeholder">Agent conversations will appear here...</div>';
+
+        // Find all agent messages in the feed and copy to theater
+        const agentMessages = session.feedEl.querySelectorAll('.agent-message');
+        if (agentMessages.length > 0) {
+            this.theaterChat.innerHTML = '';
+            agentMessages.forEach(msg => {
+                const agent = msg.querySelector('.agent-name')?.textContent || 'Agent';
+                const content = msg.querySelector('.agent-content')?.textContent || '';
+                if (content.trim()) {
+                    this.addTheaterMessage(agent, content.substring(0, 200) + (content.length > 200 ? '...' : ''));
+                }
+            });
+        }
     }
 
     // ==================== Copy to Clipboard ====================
@@ -1110,6 +1236,8 @@ class VibeAgents {
                 if (isActive) {
                     this.showActiveAgent(agent);
                     this.setStatus('active', `${agent}: ${content}`);
+                    // Activate agent in theater
+                    this.setTheaterAgentActive(agent, true);
                 }
                 this.startAgentStream(agent, session);
                 break;
@@ -1128,6 +1256,8 @@ class VibeAgents {
 
             case 'done':
                 this.finalizeAgentStream(agent, session);
+                // Deactivate agent in theater after a delay
+                setTimeout(() => this.setTheaterAgentActive(agent, false), 500);
                 break;
 
             case 'response':
@@ -1222,6 +1352,12 @@ class VibeAgents {
                 parent.classList.remove('streaming');
                 const indicator = parent.querySelector('.streaming-indicator');
                 if (indicator) indicator.remove();
+            }
+
+            // Add completed message to theater chat
+            if (rawText.trim()) {
+                const preview = rawText.substring(0, 200) + (rawText.length > 200 ? '...' : '');
+                this.addTheaterMessage(agent, preview);
             }
         }
 
@@ -1480,6 +1616,9 @@ class VibeAgents {
         }
 
         const isActive = session.id === this.activeSessionId;
+
+        // Clear all active agents in theater
+        this.clearTheaterAgents();
 
         // Mark all phases complete
         if (session.phaseIndex >= 0 && isActive) {
