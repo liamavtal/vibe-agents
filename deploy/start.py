@@ -57,28 +57,28 @@ def print_banner(host: str, port: int):
     W = 50  # inner width of the box
 
     def row(text):
-        print(f"  ║{text:<{W}}║")
+        print(f"  |{text:<{W}}|")
 
     ips = get_local_ips()
 
     print()
-    print(f"  ╔{'═' * W}╗")
+    print(f"  +{'=' * W}+")
     row("        Vibe Agents - Server Starting         ")
-    print(f"  ╠{'═' * W}╣")
+    print(f"  +{'=' * W}+")
     row(f"  Host: {host}")
     row(f"  Port: {port}")
-    print(f"  ╠{'═' * W}╣")
+    print(f"  +{'=' * W}+")
     row("  Access URLs:")
     row(f"    Local:   http://localhost:{port}")
     for ip in ips:
         row(f"    Network: http://{ip}:{port}")
-    print(f"  ╠{'═' * W}╣")
+    print(f"  +{'=' * W}+")
     row("  Endpoints:")
     row(f"    UI:      http://localhost:{port}/")
     row(f"    API:     http://localhost:{port}/api/")
     row(f"    Health:  http://localhost:{port}/api/health")
     row(f"    Docs:    http://localhost:{port}/docs")
-    print(f"  ╚{'═' * W}╝")
+    print(f"  +{'=' * W}+")
     print()
     print("  Press Ctrl+C to stop the server.")
     print()
