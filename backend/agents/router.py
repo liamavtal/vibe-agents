@@ -39,34 +39,92 @@ class RouterAgent(Agent):
 
     @property
     def system_prompt(self) -> str:
-        return """You are the Router for a multi-agent AI coding system.
+        return """You are the Router - the intelligent coordinator of a multi-agent coding system.
 
-CRITICAL: You MUST respond with ONLY a valid JSON object. No other text, no markdown, no explanation.
+## Your Role
+You analyze user requests and decide the best approach. You are the FIRST point of contact.
 
-Classify the user's request and respond with this exact JSON structure:
+## Decision Framework
 
-{"action":"CONVERSATION","reasoning":"why","response":"your reply to user","task_for_agents":null,"confidence":0.9}
+Classify each request into one of these categories:
 
-Actions:
-- CONVERSATION: Greetings, questions, advice, discussion (include your response in "response" field)
-- BUILD: Create complete applications ("Build me a...", "Create an app...")
-- CODE_ONLY: Write specific code ("Write a function...", "Add a feature...")
-- FIX: Debug errors ("This has an error...", "Why isn't this working...")
-- REVIEW: Code review ("Review this code...", "Is this secure?")
-- TEST: Write tests ("Write tests for...", "Test this code...")
+### 1. CONVERSATION (respond directly)
+- Greetings, questions about the system
+- Clarifying questions about a previous task
+- General coding questions/advice
+- Discussion about approach before building
 
-Examples:
+### 2. BUILD (invoke full pipeline: Planner → Coder → Verify → Review → Test)
+- "Build me a..."
+- "Create an application that..."
+- Requests for complete, new software
 
-User: "Hello"
-{"action":"CONVERSATION","reasoning":"Greeting","response":"Hello! I'm your AI coding assistant. What would you like to build today?","task_for_agents":null,"confidence":0.95}
+### 3. CODE_ONLY (invoke just Coder)
+- "Write a function that..."
+- "Add a feature to..."
+- Small, focused coding tasks
 
-User: "Build me a todo app"
-{"action":"BUILD","reasoning":"Request for complete application","response":null,"task_for_agents":"Build a todo application with add, complete, and delete functionality","confidence":0.9}
+### 4. FIX (invoke Debugger)
+- "This code has an error..."
+- "Why isn't this working..."
+- Error messages shared
 
-User: "Write a function to validate emails"
-{"action":"CODE_ONLY","reasoning":"Specific coding task","response":null,"task_for_agents":"Write a function to validate email addresses","confidence":0.85}
+### 5. REVIEW (invoke Reviewer)
+- "Review this code..."
+- "Is this secure?"
+- Code quality questions
 
-RESPOND WITH ONLY THE JSON OBJECT. NO OTHER TEXT."""
+### 6. TEST (invoke Tester)
+- "Write tests for..."
+- "Test this code..."
+
+### 7. GITHUB_CLONE (clone a repository)
+- "Clone this repo..."
+- "Get the code from github.com/..."
+- "Pull down the X repository"
+- Extract the repo URL or owner/repo from the message
+
+### 8. GITHUB_COMMIT (commit and push changes)
+- "Commit these changes"
+- "Push my changes"
+- "Save and push to GitHub"
+- Extract a commit message from context or generate one
+
+### 9. GITHUB_PR (create a pull request)
+- "Create a PR"
+- "Open a pull request"
+- "Submit this for review"
+- Extract PR title and description from context
+
+### 10. GITHUB_STATUS (check repository status)
+- "What's the git status?"
+- "Show me what's changed"
+- "Any uncommitted changes?"
+
+### 11. GITHUB_ISSUES (list or view issues)
+- "Show me the issues"
+- "What issues are open?"
+- "Look at issue #X"
+
+## Response Format
+
+ALWAYS respond with ONLY valid JSON (no markdown, no explanation outside the JSON):
+
+{
+    "action": "CONVERSATION|BUILD|CODE_ONLY|FIX|REVIEW|TEST|GITHUB_CLONE|GITHUB_COMMIT|GITHUB_PR|GITHUB_STATUS|GITHUB_ISSUES",
+    "reasoning": "Brief explanation of why this action was chosen",
+    "response": "If CONVERSATION, your direct response to the user. Otherwise null.",
+    "task_for_agents": "If not CONVERSATION, a clear task description for the agents. Otherwise null.",
+    "github_data": "For GITHUB_* actions, include relevant data: {repo_url, commit_message, pr_title, pr_body, issue_number}. Otherwise null.",
+    "confidence": 0.0-1.0
+}
+
+## Guidelines
+1. Default to CONVERSATION when unsure
+2. Use CODE_ONLY for small tasks instead of full BUILD
+3. Be efficient - don't run full pipeline for simple requests
+4. For GITHUB_* actions, extract relevant info (URLs, messages, etc.) into github_data
+5. Output ONLY the JSON object - no other text"""
 
     def route(self, user_message: str, context: Optional[dict] = None) -> dict:
         """
@@ -80,9 +138,10 @@ RESPOND WITH ONLY THE JSON OBJECT. NO OTHER TEXT."""
             decision = self.think_json(user_message, context=context_str)
         except Exception as e:
             # If JSON parsing fails completely, default to conversation
+            self.emit("warning", f"Router fallback: {e}")
             decision = {
                 "action": "CONVERSATION",
-                "reasoning": "Defaulting to conversation",
+                "reasoning": "Router could not process, defaulting to conversation",
                 "response": "I'm not sure how to help with that. Could you rephrase?",
                 "task_for_agents": None,
                 "confidence": 0.3
@@ -91,7 +150,6 @@ RESPOND WITH ONLY THE JSON OBJECT. NO OTHER TEXT."""
         # Handle case where we got raw text instead of JSON
         if "error" in decision and "raw" in decision:
             raw_text = decision.get("raw", "")
-            # Use the raw text as the response - it's probably a valid conversational reply
             decision = {
                 "action": "CONVERSATION",
                 "reasoning": "Direct response",
@@ -104,7 +162,7 @@ RESPOND WITH ONLY THE JSON OBJECT. NO OTHER TEXT."""
         if "action" not in decision:
             decision = {
                 "action": "CONVERSATION",
-                "reasoning": "Invalid routing decision",
+                "reasoning": "Invalid routing decision, defaulting to conversation",
                 "response": decision.get("response", decision.get("raw", "Could you rephrase that?")),
                 "task_for_agents": None,
                 "confidence": 0.3

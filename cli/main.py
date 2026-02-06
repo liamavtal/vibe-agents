@@ -11,6 +11,13 @@ Usage:
     vibe --server                        # Start the web server
     vibe --projects                      # List saved projects
     vibe --resume 3                      # Resume project by ID
+
+GitHub Commands:
+    vibe --clone user/repo               # Clone a GitHub repository
+    vibe --git-status                    # Show git status of current project
+    vibe --commit "message"              # Commit and push changes
+    vibe --pr "title"                    # Create a pull request
+    vibe --issues                        # List open issues
 """
 
 import argparse
@@ -106,6 +113,34 @@ def create_parser() -> argparse.ArgumentParser:
         type=int,
         metavar="ID",
         help="Resume a project by ID",
+    )
+
+    # GitHub integration
+    github_group = parser.add_argument_group("GitHub")
+    github_group.add_argument(
+        "--clone",
+        metavar="REPO",
+        help="Clone a GitHub repository (user/repo or URL)",
+    )
+    github_group.add_argument(
+        "--git-status",
+        action="store_true",
+        help="Show git status of current project",
+    )
+    github_group.add_argument(
+        "--commit",
+        metavar="MESSAGE",
+        help="Commit and push changes with message",
+    )
+    github_group.add_argument(
+        "--pr",
+        metavar="TITLE",
+        help="Create a pull request with title",
+    )
+    github_group.add_argument(
+        "--issues",
+        action="store_true",
+        help="List open issues for current project",
     )
 
     # Options
@@ -338,6 +373,241 @@ def resume_project(project_id: int, verbose: bool = False, project_dir: str = ".
     renderer.console.print("\n  [dim]Goodbye![/]\n")
 
 
+def github_clone(repo: str, project_dir: str = "./projects", verbose: bool = False):
+    """Clone a GitHub repository."""
+    from cli.terminal_renderer import TerminalRenderer
+
+    renderer = TerminalRenderer(verbose=verbose)
+    renderer.start()
+
+    try:
+        from backend.integrations import GitHubIntegration
+    except ImportError as e:
+        renderer.print_error(f"Missing dependency: {e}")
+        return False
+
+    github = GitHubIntegration(projects_dir=project_dir)
+
+    renderer.print_info(f"Cloning {repo}...")
+    result = github.clone(repo)
+
+    if result.success:
+        renderer.print_success(f"Cloned to: {result.output}")
+        renderer.finish(True)
+        return True
+    else:
+        renderer.print_error(result.error or "Clone failed")
+        renderer.finish(False)
+        return False
+
+
+def github_status(project_dir: str = "./projects", verbose: bool = False):
+    """Show git status of current project."""
+    from cli.terminal_renderer import TerminalRenderer
+
+    renderer = TerminalRenderer(verbose=verbose)
+
+    try:
+        from backend.integrations import GitHubIntegration
+        from backend.storage import Database
+    except ImportError as e:
+        renderer.print_error(f"Missing dependency: {e}")
+        return False
+
+    db = Database()
+    github = GitHubIntegration(projects_dir=project_dir)
+
+    # Get active project
+    projects = db.list_projects(status="active", limit=1)
+    if not projects:
+        renderer.print_error("No active project. Use --clone or --resume first.")
+        return False
+
+    project = projects[0]
+    project_path = project.path if hasattr(project, "path") else project.get("path")
+
+    if not project_path:
+        renderer.print_error("Project has no path set.")
+        return False
+
+    result = github.get_status_summary(project_path)
+
+    if result.success:
+        renderer.console.print(f"\n  [bold]Git Status:[/] {project_path}\n")
+        if result.output:
+            for line in result.output.split("\n"):
+                renderer.console.print(f"    {line}")
+        else:
+            renderer.console.print("    [green]Clean - no changes[/]")
+        renderer.console.print()
+        return True
+    else:
+        renderer.print_error(result.error or "Not a git repository")
+        return False
+
+
+def github_commit(message: str, project_dir: str = "./projects", verbose: bool = False):
+    """Commit and push changes."""
+    from cli.terminal_renderer import TerminalRenderer
+
+    renderer = TerminalRenderer(verbose=verbose)
+    renderer.start()
+
+    try:
+        from backend.integrations import GitHubIntegration
+        from backend.storage import Database
+    except ImportError as e:
+        renderer.print_error(f"Missing dependency: {e}")
+        return False
+
+    db = Database()
+    github = GitHubIntegration(projects_dir=project_dir)
+
+    # Get active project
+    projects = db.list_projects(status="active", limit=1)
+    if not projects:
+        renderer.print_error("No active project. Use --clone or --resume first.")
+        renderer.finish(False)
+        return False
+
+    project = projects[0]
+    project_path = project.path if hasattr(project, "path") else project.get("path")
+
+    if not project_path:
+        renderer.print_error("Project has no path set.")
+        renderer.finish(False)
+        return False
+
+    renderer.print_info(f"Committing: {message}")
+    result = github.commit_and_push(project_path, message)
+
+    if result.success:
+        renderer.print_success("Committed and pushed successfully!")
+        renderer.finish(True)
+        return True
+    else:
+        renderer.print_error(result.error or "Commit failed")
+        renderer.finish(False)
+        return False
+
+
+def github_pr(title: str, project_dir: str = "./projects", verbose: bool = False):
+    """Create a pull request."""
+    from cli.terminal_renderer import TerminalRenderer
+
+    renderer = TerminalRenderer(verbose=verbose)
+    renderer.start()
+
+    try:
+        from backend.integrations import GitHubIntegration
+        from backend.storage import Database
+    except ImportError as e:
+        renderer.print_error(f"Missing dependency: {e}")
+        return False
+
+    db = Database()
+    github = GitHubIntegration(projects_dir=project_dir)
+
+    # Get active project
+    projects = db.list_projects(status="active", limit=1)
+    if not projects:
+        renderer.print_error("No active project. Use --clone or --resume first.")
+        renderer.finish(False)
+        return False
+
+    project = projects[0]
+    project_path = project.path if hasattr(project, "path") else project.get("path")
+
+    if not project_path:
+        renderer.print_error("Project has no path set.")
+        renderer.finish(False)
+        return False
+
+    renderer.print_info(f"Creating PR: {title}")
+    result = github.create_pr(project_path, title, body=f"Created via Vibe Agents CLI\n\nTitle: {title}")
+
+    if result.success:
+        renderer.print_success(f"PR created: {result.output}")
+        renderer.finish(True)
+        return True
+    else:
+        renderer.print_error(result.error or "PR creation failed")
+        renderer.finish(False)
+        return False
+
+
+def github_issues(project_dir: str = "./projects", verbose: bool = False):
+    """List open issues."""
+    from cli.terminal_renderer import TerminalRenderer
+
+    renderer = TerminalRenderer(verbose=verbose)
+
+    try:
+        from backend.integrations import GitHubIntegration
+        from backend.storage import Database
+        import json
+    except ImportError as e:
+        renderer.print_error(f"Missing dependency: {e}")
+        return False
+
+    db = Database()
+    github = GitHubIntegration(projects_dir=project_dir)
+
+    # Get active project
+    projects = db.list_projects(status="active", limit=1)
+    if not projects:
+        renderer.print_error("No active project. Use --clone or --resume first.")
+        return False
+
+    project = projects[0]
+    project_path = project.path if hasattr(project, "path") else project.get("path")
+
+    if not project_path:
+        renderer.print_error("Project has no path set.")
+        return False
+
+    result = github.list_issues(project_path)
+
+    if result.success:
+        try:
+            issues = json.loads(result.output) if result.output else []
+        except json.JSONDecodeError:
+            issues = []
+
+        if not issues:
+            renderer.console.print("\n  [dim]No open issues.[/]\n")
+            return True
+
+        from rich.table import Table
+        from rich import box
+
+        table = Table(
+            title="Open Issues",
+            box=box.ROUNDED,
+            border_style="blue",
+            title_style="bold blue",
+        )
+        table.add_column("#", style="dim", width=6)
+        table.add_column("Title", style="bold")
+        table.add_column("Labels", style="dim")
+
+        for issue in issues:
+            labels = ", ".join([l.get("name", "") for l in issue.get("labels", [])])
+            table.add_row(
+                str(issue.get("number", "?")),
+                issue.get("title", ""),
+                labels or "-",
+            )
+
+        renderer.console.print()
+        renderer.console.print(table)
+        renderer.console.print()
+        return True
+    else:
+        renderer.print_error(result.error or "Failed to list issues")
+        return False
+
+
 def main():
     parser = create_parser()
     args = parser.parse_args()
@@ -372,6 +642,45 @@ def main():
             project_dir=args.project_dir,
         )
         return
+
+    # GitHub commands
+    if args.clone:
+        success = github_clone(
+            args.clone,
+            project_dir=args.project_dir,
+            verbose=args.verbose,
+        )
+        sys.exit(0 if success else 1)
+
+    if args.git_status:
+        success = github_status(
+            project_dir=args.project_dir,
+            verbose=args.verbose,
+        )
+        sys.exit(0 if success else 1)
+
+    if args.commit:
+        success = github_commit(
+            args.commit,
+            project_dir=args.project_dir,
+            verbose=args.verbose,
+        )
+        sys.exit(0 if success else 1)
+
+    if args.pr:
+        success = github_pr(
+            args.pr,
+            project_dir=args.project_dir,
+            verbose=args.verbose,
+        )
+        sys.exit(0 if success else 1)
+
+    if args.issues:
+        success = github_issues(
+            project_dir=args.project_dir,
+            verbose=args.verbose,
+        )
+        sys.exit(0 if success else 1)
 
     # Interactive standalone
     if args.interactive:

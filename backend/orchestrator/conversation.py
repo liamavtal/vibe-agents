@@ -31,6 +31,7 @@ from ..agents import (
     DebuggerAgent
 )
 from ..storage import Database, ProjectContext, FileLocator
+from ..integrations import GitHubIntegration
 from .dialogue import run_code_review_dialogue, run_test_debug_dialogue
 
 
@@ -70,6 +71,12 @@ class ConversationalOrchestrator:
         self.db = db or Database()
         self.project_context = ProjectContext(self.db)
         self.file_locator = FileLocator(self.db, str(self.projects_dir))
+
+        # GitHub integration
+        self.github = GitHubIntegration(
+            projects_dir=str(self.projects_dir),
+            on_event=on_event
+        )
 
         # Initialize agents with message callback
         agent_callback = self._create_agent_callback()
@@ -273,6 +280,22 @@ class ConversationalOrchestrator:
 
         elif action == "TEST":
             result = self._execute_test(decision.get("task_for_agents", user_message))
+
+        # GitHub actions
+        elif action == "GITHUB_CLONE":
+            result = self._execute_github_clone(decision.get("github_data", {}), user_message)
+
+        elif action == "GITHUB_COMMIT":
+            result = self._execute_github_commit(decision.get("github_data", {}), user_message)
+
+        elif action == "GITHUB_PR":
+            result = self._execute_github_pr(decision.get("github_data", {}), user_message)
+
+        elif action == "GITHUB_STATUS":
+            result = self._execute_github_status()
+
+        elif action == "GITHUB_ISSUES":
+            result = self._execute_github_issues(decision.get("github_data", {}))
 
         else:
             response = decision.get("response", "I didn't understand that. Can you rephrase?")
@@ -519,3 +542,267 @@ Create ALL the files needed. Use the Write tool for each file."""
         for agent in self._tool_agents:
             agent.clear_history()
         self.emit("cleared", {})
+
+    # ==================== GitHub Actions ====================
+
+    def _execute_github_clone(self, github_data: dict, user_message: str) -> dict:
+        """Clone a GitHub repository."""
+        self.emit("phase", "Cloning Repository")
+
+        # Extract repo URL from github_data or user message
+        repo_url = None
+        if isinstance(github_data, dict):
+            repo_url = github_data.get("repo_url") or github_data.get("repo")
+
+        if not repo_url:
+            # Try to extract from user message
+            import re
+            # Match github.com URLs or owner/repo format
+            match = re.search(r'github\.com[/:]([^/\s]+/[^/\s]+?)(?:\.git)?(?:\s|$)', user_message)
+            if match:
+                repo_url = match.group(1)
+            else:
+                match = re.search(r'\b([a-zA-Z0-9_-]+/[a-zA-Z0-9_-]+)\b', user_message)
+                if match:
+                    repo_url = match.group(1)
+
+        if not repo_url:
+            return {
+                "type": "github",
+                "action": "clone",
+                "success": False,
+                "error": "Could not find a repository URL. Try: 'clone owner/repo' or 'clone https://github.com/owner/repo'"
+            }
+
+        result = self.github.clone(repo_url)
+
+        if result.success:
+            # Set the cloned repo as the active project
+            self.state.project_dir = result.output
+            project_name = Path(result.output).name
+
+            # Create project in database
+            project_id = self.db.create_project(
+                name=project_name,
+                description=f"Cloned from {repo_url}",
+                directory=result.output
+            )
+            self.state.active_project_id = project_id
+            self.state.active_project_name = project_name
+
+            # Set project dir for all agents
+            for agent in self._tool_agents:
+                agent.set_project_dir(result.output)
+
+            self.emit("project_active", {
+                "id": project_id,
+                "name": project_name,
+                "directory": result.output
+            })
+
+            return {
+                "type": "github",
+                "action": "clone",
+                "success": True,
+                "response": f"Cloned **{repo_url}** to `{result.output}`\n\nYou can now work on this project. Try asking me to make changes!",
+                "project_dir": result.output,
+                "project_id": project_id
+            }
+
+        return {
+            "type": "github",
+            "action": "clone",
+            "success": False,
+            "error": result.error or "Clone failed"
+        }
+
+    def _execute_github_commit(self, github_data: dict, user_message: str) -> dict:
+        """Commit and push changes."""
+        self.emit("phase", "Committing Changes")
+
+        if not self.state.project_dir:
+            return {
+                "type": "github",
+                "action": "commit",
+                "success": False,
+                "error": "No active project. Clone a repo first or open a project."
+            }
+
+        # Get commit message
+        commit_message = None
+        if isinstance(github_data, dict):
+            commit_message = github_data.get("commit_message") or github_data.get("message")
+
+        if not commit_message:
+            # Generate a commit message based on changed files
+            status = self.github.get_status_summary(self.state.project_dir)
+            if status.success and status.output:
+                lines = status.output.strip().split('\n')
+                if len(lines) <= 3:
+                    commit_message = f"Update {len(lines)} file(s)"
+                else:
+                    commit_message = f"Update {len(lines)} files"
+            else:
+                commit_message = "Update from Vibe Agents"
+
+        result = self.github.commit_and_push(self.state.project_dir, commit_message)
+
+        if result.success:
+            return {
+                "type": "github",
+                "action": "commit",
+                "success": True,
+                "response": f"Committed and pushed: **{commit_message}**"
+            }
+
+        return {
+            "type": "github",
+            "action": "commit",
+            "success": False,
+            "error": result.error or "Commit failed"
+        }
+
+    def _execute_github_pr(self, github_data: dict, user_message: str) -> dict:
+        """Create a pull request."""
+        self.emit("phase", "Creating Pull Request")
+
+        if not self.state.project_dir:
+            return {
+                "type": "github",
+                "action": "pr",
+                "success": False,
+                "error": "No active project. Clone a repo first."
+            }
+
+        # Get PR details
+        title = "Update from Vibe Agents"
+        body = "Changes made via Vibe Agents AI coding platform."
+
+        if isinstance(github_data, dict):
+            title = github_data.get("pr_title") or github_data.get("title") or title
+            body = github_data.get("pr_body") or github_data.get("body") or body
+
+        # Get current branch
+        branch_result = self.github.get_current_branch(self.state.project_dir)
+        current_branch = branch_result.output if branch_result.success else "main"
+
+        # If on main, create a feature branch first
+        if current_branch in ("main", "master"):
+            import time
+            branch_name = f"vibe-agents-{int(time.time())}"
+            self.github.create_branch(self.state.project_dir, branch_name)
+            self.github.commit_and_push(self.state.project_dir, title)
+
+        result = self.github.create_pr(
+            self.state.project_dir,
+            title=title,
+            body=body
+        )
+
+        if result.success:
+            return {
+                "type": "github",
+                "action": "pr",
+                "success": True,
+                "response": f"Created pull request!\n\n**{title}**\n\n{result.output}",
+                "pr_url": result.output
+            }
+
+        return {
+            "type": "github",
+            "action": "pr",
+            "success": False,
+            "error": result.error or "Failed to create PR"
+        }
+
+    def _execute_github_status(self) -> dict:
+        """Check git status of current project."""
+        self.emit("phase", "Checking Status")
+
+        if not self.state.project_dir:
+            return {
+                "type": "github",
+                "action": "status",
+                "success": False,
+                "error": "No active project."
+            }
+
+        status = self.github.get_status_summary(self.state.project_dir)
+        branch = self.github.get_current_branch(self.state.project_dir)
+
+        if status.success:
+            changes = status.output.strip() if status.output else "No changes"
+            branch_name = branch.output if branch.success else "unknown"
+
+            return {
+                "type": "github",
+                "action": "status",
+                "success": True,
+                "response": f"**Branch:** `{branch_name}`\n\n**Changes:**\n```\n{changes}\n```",
+                "branch": branch_name,
+                "changes": changes
+            }
+
+        return {
+            "type": "github",
+            "action": "status",
+            "success": False,
+            "error": status.error or "Failed to get status"
+        }
+
+    def _execute_github_issues(self, github_data: dict) -> dict:
+        """List or view GitHub issues."""
+        self.emit("phase", "Fetching Issues")
+
+        if not self.state.project_dir:
+            return {
+                "type": "github",
+                "action": "issues",
+                "success": False,
+                "error": "No active project."
+            }
+
+        issue_number = None
+        if isinstance(github_data, dict):
+            issue_number = github_data.get("issue_number") or github_data.get("number")
+
+        if issue_number:
+            result = self.github.get_issue(self.state.project_dir, int(issue_number))
+        else:
+            result = self.github.list_issues(self.state.project_dir)
+
+        if result.success:
+            try:
+                data = json.loads(result.output)
+                if isinstance(data, list):
+                    if not data:
+                        response = "No open issues found."
+                    else:
+                        lines = ["**Open Issues:**\n"]
+                        for issue in data[:10]:
+                            lines.append(f"- #{issue.get('number')}: {issue.get('title')}")
+                        response = "\n".join(lines)
+                else:
+                    response = f"**Issue #{data.get('number')}:** {data.get('title')}\n\n{data.get('body', '')}"
+
+                return {
+                    "type": "github",
+                    "action": "issues",
+                    "success": True,
+                    "response": response,
+                    "data": data
+                }
+            except json.JSONDecodeError:
+                return {
+                    "type": "github",
+                    "action": "issues",
+                    "success": True,
+                    "response": result.output
+                }
+
+        return {
+            "type": "github",
+            "action": "issues",
+            "success": False,
+            "error": result.error or "Failed to fetch issues"
+        }
