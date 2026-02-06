@@ -47,7 +47,7 @@ def create_parser() -> argparse.ArgumentParser:
     mode_group.add_argument(
         "--build", "-b",
         metavar="PROMPT",
-        help="Run full pipeline (plan → code → review → test)",
+        help="Run full pipeline (plan -> code -> review -> test)",
     )
     mode_group.add_argument(
         "--code", "-c",

@@ -108,7 +108,7 @@ class TerminalRenderer:
 
         color = "green" if confidence > 0.7 else "yellow"
         self.console.print(
-            f"  [{color}]→ {action}[/] "
+            f"  [{color}]-> {action}[/] "
             f"[dim]({confidence:.0%} confidence)[/]"
         )
         if reasoning and self.verbose:
@@ -117,7 +117,7 @@ class TerminalRenderer:
     def _handle_phase(self, data):
         self._flush_stream()
         phase = data if isinstance(data, str) else str(data)
-        icon = PHASE_ICONS.get(phase, "▶")
+        icon = PHASE_ICONS.get(phase, ">")
         self.console.print()
         self.console.rule(f"[bold blue]{icon} {phase}[/]", style="blue")
 
@@ -133,7 +133,7 @@ class TerminalRenderer:
             self._flush_stream()
             self._current_agent = agent
             color = AGENT_COLORS.get(agent, "white")
-            icon = AGENT_ICONS.get(agent, "●")
+            icon = AGENT_ICONS.get(agent, "*")
             self.console.print(
                 f"\n  {icon} [{color} bold]{agent}[/] [dim]is thinking...[/]"
             )
@@ -320,7 +320,7 @@ class TerminalRenderer:
             fr = data.get("from", "?")
             to = data.get("to", "?")
             rd = data.get("round", "?")
-            self.console.print(f"  [dim]{fr} → {to} (round {rd})[/]")
+            self.console.print(f"  [dim]{fr} -> {to} (round {rd})[/]")
 
     def _handle_dialogue_resolved(self, data):
         if isinstance(data, dict):
