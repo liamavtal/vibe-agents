@@ -150,7 +150,7 @@ class Agent(ABC):
 
         output = result.stdout.strip()
         parsed = self._parse_json_output(output)
-        self.emit("response", json.dumps(parsed, indent=2)[:500])
+        self.emit("done", json.dumps(parsed, indent=2)[:200])
         return parsed
 
     def _build_streaming_args(self, prompt: str) -> list[str]:
