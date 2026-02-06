@@ -367,7 +367,7 @@ class Agent(ABC):
                 pass
 
         # Last resort - return error dict
-        self.emit("warning", f"Could not parse JSON from output: {text[:200]}")
+        # Fallback handled gracefully - return raw text for caller to process
         return {
             "error": "Failed to parse structured output",
             "raw": text[:500]
