@@ -109,14 +109,14 @@ class VibeAgents {
         this.shortcutHint = document.getElementById('shortcut-hint');
 
         // Agent Theater elements
-        this.theaterOverlay = document.getElementById('agent-theater-overlay');
+        this.theaterPanel = document.getElementById('theater-panel');
         this.theaterToggleBtn = document.getElementById('theater-toggle');
         this.theaterCloseBtn = document.getElementById('theater-close');
-        this.theaterChat = document.getElementById('theater-chat');
         this.theaterAgents = document.querySelectorAll('.theater-agent');
         this.arrowLeft = document.getElementById('arrow-left');
         this.arrowRight = document.getElementById('arrow-right');
         this.theaterOpen = false;
+        this.mainEl = document.querySelector('.main');
 
         this.init();
     }
@@ -214,14 +214,6 @@ class VibeAgents {
         if (this.theaterCloseBtn) {
             this.theaterCloseBtn.addEventListener('click', () => this.toggleTheater(false));
         }
-        // Close theater on backdrop click
-        if (this.theaterOverlay) {
-            this.theaterOverlay.addEventListener('click', (e) => {
-                if (e.target.classList.contains('theater-backdrop')) {
-                    this.toggleTheater(false);
-                }
-            });
-        }
 
         // Keyboard shortcuts
         document.addEventListener('keydown', (e) => this.handleKeyboardShortcut(e));
@@ -278,9 +270,6 @@ class VibeAgents {
         } else if (ctrl && e.key === 't') {
             e.preventDefault();
             this.toggleTheater();
-        } else if (e.key === 'Escape' && this.theaterOpen) {
-            e.preventDefault();
-            this.toggleTheater(false);
         }
     }
 
@@ -339,17 +328,23 @@ class VibeAgents {
     // ==================== Agent Theater ====================
 
     toggleTheater(show = null) {
-        if (!this.theaterOverlay) return;
+        if (!this.theaterPanel) return;
 
         this.theaterOpen = show !== null ? show : !this.theaterOpen;
-        this.theaterOverlay.hidden = !this.theaterOpen;
+        this.theaterPanel.hidden = !this.theaterOpen;
 
-        if (this.theaterOpen) {
-            // Clear and populate theater chat with current conversation
-            this.syncTheaterChat();
-            document.body.style.overflow = 'hidden';
-        } else {
-            document.body.style.overflow = '';
+        // Update main layout
+        if (this.mainEl) {
+            if (this.theaterOpen) {
+                this.mainEl.classList.add('has-theater');
+            } else {
+                this.mainEl.classList.remove('has-theater');
+            }
+        }
+
+        // Update toggle button state
+        if (this.theaterToggleBtn) {
+            this.theaterToggleBtn.classList.toggle('active', this.theaterOpen);
         }
     }
 
@@ -381,54 +376,6 @@ class VibeAgents {
         if (this.arrowRight) this.arrowRight.hidden = true;
     }
 
-    addTheaterMessage(agent, text) {
-        if (!this.theaterChat || !this.theaterOpen) return;
-
-        // Remove placeholder if exists
-        const placeholder = this.theaterChat.querySelector('.theater-chat-placeholder');
-        if (placeholder) placeholder.remove();
-
-        const avatarSrc = this.getAgentAvatar(agent);
-        const messageEl = document.createElement('div');
-        messageEl.className = 'theater-message';
-        messageEl.dataset.agent = agent;
-        messageEl.innerHTML = `
-            <img src="${avatarSrc}" alt="${agent}" class="theater-message-avatar">
-            <div class="theater-message-content">
-                <div class="theater-message-header">
-                    <span class="theater-message-agent">${agent}</span>
-                </div>
-                <div class="theater-message-text">${this.escapeHtml(text)}</div>
-            </div>
-        `;
-
-        this.theaterChat.appendChild(messageEl);
-        this.theaterChat.scrollTop = this.theaterChat.scrollHeight;
-    }
-
-    syncTheaterChat() {
-        // Sync theater chat with the current session's agent messages
-        if (!this.theaterChat) return;
-
-        const session = this.getActiveSession();
-        if (!session) return;
-
-        // Clear existing messages
-        this.theaterChat.innerHTML = '<div class="theater-chat-placeholder">Agent conversations will appear here...</div>';
-
-        // Find all agent messages in the feed and copy to theater
-        const agentMessages = session.feedEl.querySelectorAll('.agent-message');
-        if (agentMessages.length > 0) {
-            this.theaterChat.innerHTML = '';
-            agentMessages.forEach(msg => {
-                const agent = msg.querySelector('.agent-name')?.textContent || 'Agent';
-                const content = msg.querySelector('.agent-content')?.textContent || '';
-                if (content.trim()) {
-                    this.addTheaterMessage(agent, content.substring(0, 200) + (content.length > 200 ? '...' : ''));
-                }
-            });
-        }
-    }
 
     // ==================== Copy to Clipboard ====================
 
@@ -1354,11 +1301,6 @@ class VibeAgents {
                 if (indicator) indicator.remove();
             }
 
-            // Add completed message to theater chat
-            if (rawText.trim()) {
-                const preview = rawText.substring(0, 200) + (rawText.length > 200 ? '...' : '');
-                this.addTheaterMessage(agent, preview);
-            }
         }
 
         session.currentStreamEl = null;

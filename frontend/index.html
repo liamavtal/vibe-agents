@@ -41,54 +41,6 @@
             <button class="tab-new-btn" id="tab-new-btn" title="New session">+</button>
         </nav>
 
-        <!-- Agent Theater Overlay -->
-        <div class="agent-theater-overlay" id="agent-theater-overlay" hidden>
-            <div class="theater-backdrop"></div>
-            <div class="theater-content">
-                <button class="theater-close" id="theater-close">&times;</button>
-                <div class="theater-stage">
-                    <img src="/static/figures/company.png" alt="Agent Team" class="theater-company-img">
-                    <!-- Agent positions with status indicators -->
-                    <div class="theater-agent" data-agent="Router" style="top: 12%; left: 50%;">
-                        <img src="/static/avatars/router.png" alt="Router">
-                        <div class="agent-pulse"></div>
-                        <span class="agent-name">Router</span>
-                    </div>
-                    <div class="theater-agent" data-agent="Planner" style="top: 35%; left: 30%;">
-                        <img src="/static/avatars/planner.png" alt="Planner">
-                        <div class="agent-pulse"></div>
-                        <span class="agent-name">Planner</span>
-                    </div>
-                    <div class="theater-agent" data-agent="Coder" style="top: 35%; left: 70%;">
-                        <img src="/static/avatars/coder.png" alt="Coder">
-                        <div class="agent-pulse"></div>
-                        <span class="agent-name">Coder</span>
-                    </div>
-                    <div class="theater-agent" data-agent="Reviewer" style="top: 60%; left: 25%;">
-                        <img src="/static/avatars/reviewer.png" alt="Reviewer">
-                        <div class="agent-pulse"></div>
-                        <span class="agent-name">Reviewer</span>
-                    </div>
-                    <div class="theater-agent" data-agent="Tester" style="top: 60%; left: 50%;">
-                        <img src="/static/avatars/tester.png" alt="Tester">
-                        <div class="agent-pulse"></div>
-                        <span class="agent-name">Tester</span>
-                    </div>
-                    <div class="theater-agent" data-agent="Debugger" style="top: 60%; left: 75%;">
-                        <img src="/static/avatars/debugger.png" alt="Debugger">
-                        <div class="agent-pulse"></div>
-                        <span class="agent-name">Debugger</span>
-                    </div>
-                    <!-- Communication arrows -->
-                    <img src="/static/figures/left.png" class="theater-arrow arrow-left" id="arrow-left" hidden>
-                    <img src="/static/figures/right.png" class="theater-arrow arrow-right" id="arrow-right" hidden>
-                </div>
-                <div class="theater-chat" id="theater-chat">
-                    <div class="theater-chat-placeholder">Agent conversations will appear here...</div>
-                </div>
-            </div>
-        </div>
-
         <!-- Main content area -->
         <main class="main">
             <!-- Project browser sidebar -->
@@ -146,6 +98,50 @@
                             <button class="example-btn" data-prompt="How does this system work?">How it works</button>
                         </div>
                     </div>
+                </div>
+            </section>
+
+            <!-- Middle panel: Agent Theater (toggle-able) -->
+            <section class="panel theater-panel" id="theater-panel" hidden>
+                <h2>
+                    <span>Agent Theater</span>
+                    <button class="theater-close-btn" id="theater-close" title="Close theater">&times;</button>
+                </h2>
+                <div class="theater-stage">
+                    <!-- Agent positions -->
+                    <div class="theater-agent" data-agent="Router" style="top: 8%; left: 50%;">
+                        <img src="/static/avatars/router.png" alt="Router">
+                        <div class="agent-pulse"></div>
+                        <span class="agent-name">Router</span>
+                    </div>
+                    <div class="theater-agent" data-agent="Planner" style="top: 40%; left: 20%;">
+                        <img src="/static/avatars/planner.png" alt="Planner">
+                        <div class="agent-pulse"></div>
+                        <span class="agent-name">Planner</span>
+                    </div>
+                    <div class="theater-agent" data-agent="Coder" style="top: 40%; left: 80%;">
+                        <img src="/static/avatars/coder.png" alt="Coder">
+                        <div class="agent-pulse"></div>
+                        <span class="agent-name">Coder</span>
+                    </div>
+                    <div class="theater-agent" data-agent="Reviewer" style="top: 75%; left: 15%;">
+                        <img src="/static/avatars/reviewer.png" alt="Reviewer">
+                        <div class="agent-pulse"></div>
+                        <span class="agent-name">Reviewer</span>
+                    </div>
+                    <div class="theater-agent" data-agent="Tester" style="top: 75%; left: 50%;">
+                        <img src="/static/avatars/tester.png" alt="Tester">
+                        <div class="agent-pulse"></div>
+                        <span class="agent-name">Tester</span>
+                    </div>
+                    <div class="theater-agent" data-agent="Debugger" style="top: 75%; left: 85%;">
+                        <img src="/static/avatars/debugger.png" alt="Debugger">
+                        <div class="agent-pulse"></div>
+                        <span class="agent-name">Debugger</span>
+                    </div>
+                    <!-- Communication arrows -->
+                    <img src="/static/figures/left.png" class="theater-arrow arrow-left" id="arrow-left" hidden>
+                    <img src="/static/figures/right.png" class="theater-arrow arrow-right" id="arrow-right" hidden>
                 </div>
             </section>
 
