@@ -1,178 +1,98 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vibe Agents - AI Coding Platform</title>
+    <title>Vibe Agents</title>
+    <link rel="icon" type="image/png" href="/static/avatars/coder.png">
+    <script src="https://libs.baidu.com/jquery/2.1.4/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/markdown-it@13.0.1/dist/markdown-it.min.js"></script>
+    <link rel="stylesheet" href="/static/chatdev.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
-    <link rel="stylesheet" href="/static/styles.css">
 </head>
+
 <body>
-    <div class="app">
-        <!-- Header -->
-        <header class="header">
-            <div class="header-content">
-                <h1>Vibe Agents</h1>
-                <p class="tagline">Talk naturally. Build intelligently.</p>
-            </div>
-            <div class="header-actions">
-                <button id="theme-toggle" class="theme-toggle-btn" title="Toggle theme (Ctrl+D)">
-                    <svg class="theme-icon-dark" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-                    <svg class="theme-icon-light" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-                </button>
-                <button id="theater-toggle" class="theater-toggle-btn" title="Toggle Agent Theater (Ctrl+T)">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="15" rx="2" ry="2"/><polyline points="17 2 12 7 7 2"/></svg>
-                    Theater
-                </button>
-                <button id="projects-toggle" class="projects-toggle-btn" title="Toggle project browser">Projects</button>
-                <button id="clear-btn" class="clear-btn" title="Clear conversation">Clear</button>
-                <div class="mode-toggle">
-                    <label class="toggle-label">
-                        <input type="checkbox" id="mode-toggle">
-                        <span class="toggle-text">Full Pipeline</span>
-                    </label>
-                </div>
-            </div>
-        </header>
+    <!-- Left Panel: Company Office -->
+    <div id="operation">
+        <div id="title">
+            <h1 id="main-title">Vibe Agents</h1>
+            <p id="subtitle">Multi-Agent AI Coding Platform</p>
+        </div>
 
-        <!-- Session Tabs -->
-        <nav class="tab-bar" id="tab-bar">
-            <div class="tab-list" id="tab-list"></div>
-            <button class="tab-new-btn" id="tab-new-btn" title="New session">+</button>
-        </nav>
+        <div id="imgShow">
+            <img src="/static/theater/company.png" alt="vibe-agents-office" id="company-img">
+            <img src="/static/theater/right.png" id="arrow-right" class="blinking-animation arrow-indicator">
+            <img src="/static/theater/left.png" id="arrow-left" class="blinking-animation arrow-indicator">
+        </div>
 
-        <!-- Main content area -->
-        <main class="main">
-            <!-- Project browser sidebar -->
-            <aside class="project-sidebar" id="project-sidebar" hidden>
-                <div class="sidebar-header">
-                    <h3>Projects</h3>
-                    <button class="sidebar-close" id="sidebar-close" title="Close sidebar">&times;</button>
-                </div>
-                <div class="project-list" id="project-list">
-                    <div class="project-list-empty">No projects yet. Start building!</div>
-                </div>
-            </aside>
-
-            <!-- Left panel: Chat + Agent Theater -->
-            <section class="panel agent-theater">
-                <h2>
-                    <span id="panel-title">Conversation</span>
-                    <span class="agent-badge" id="active-agent" hidden></span>
-                    <span class="project-badge" id="active-project-badge" hidden></span>
-                </h2>
-                <!-- Phase Timeline -->
-                <div class="phase-timeline" id="phase-timeline" hidden>
-                    <div class="phase-step" data-phase="Planning">
-                        <div class="phase-dot"></div>
-                        <span class="phase-label">Plan</span>
-                    </div>
-                    <div class="phase-connector"></div>
-                    <div class="phase-step" data-phase="Coding">
-                        <div class="phase-dot"></div>
-                        <span class="phase-label">Code</span>
-                    </div>
-                    <div class="phase-connector"></div>
-                    <div class="phase-step" data-phase="Reviewing">
-                        <div class="phase-dot"></div>
-                        <span class="phase-label">Review</span>
-                    </div>
-                    <div class="phase-connector"></div>
-                    <div class="phase-step" data-phase="Testing">
-                        <div class="phase-dot"></div>
-                        <span class="phase-label">Test</span>
-                    </div>
-                </div>
-                <div class="status-bar">
-                    <span class="status-indicator" id="status-indicator"></span>
-                    <span id="status-text">Ready to chat</span>
-                </div>
-                <div class="agent-feed" id="agent-feed">
-                    <div class="welcome-message">
-                        <p>Hey! I'm your AI coding assistant.</p>
-                        <p>Just tell me what you want to build, or ask me anything about code.</p>
-                        <p class="hint">I'll intelligently decide when to use specialized agents.</p>
-                        <div class="example-prompts">
-                            <button class="example-btn" data-prompt="Build me a todo app with local storage">Todo App</button>
-                            <button class="example-btn" data-prompt="Write a function to validate email addresses">Validate Email</button>
-                            <button class="example-btn" data-prompt="How does this system work?">How it works</button>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Middle panel: Agent Theater (toggle-able) -->
-            <section class="panel theater-panel" id="theater-panel" hidden>
-                <h2>
-                    <span>Agent Theater</span>
-                    <button class="theater-close-btn" id="theater-close" title="Close theater">&times;</button>
-                </h2>
-                <div class="theater-stage">
-                    <!-- ChatDev-style office background -->
-                    <img src="/static/theater/company.png" alt="Office" id="theater-office" class="theater-office-bg">
-
-                    <!-- Animated arrow indicators (like ChatDev) -->
-                    <img src="/static/theater/right.png" id="theater-arrow-right" class="theater-arrow blinking-animation" style="display: none;">
-                    <img src="/static/theater/left.png" id="theater-arrow-left" class="theater-arrow blinking-animation" style="display: none;">
-
-                    <!-- Speech bubble overlay -->
-                    <div class="theater-speech-bubble" id="theater-speech-bubble">
-                        <div class="speech-agent-name" id="speech-agent-name"></div>
-                        <div class="speech-content" id="speech-content"></div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Right panel: Code Output -->
-            <section class="panel code-panel">
-                <h2>
-                    <span>Generated Code</span>
-                    <button class="copy-code-btn" id="copy-code-btn" title="Copy code to clipboard">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-                        <span>Copy</span>
-                    </button>
-                </h2>
-                <div class="code-panel-body">
-                    <div class="file-tree" id="file-tree">
-                        <div class="file-tree-empty">No files yet</div>
-                    </div>
-                    <div class="code-area">
-                        <div class="file-tabs" id="file-tabs"></div>
-                        <pre class="code-view" id="code-view"><code>// Your generated code will appear here</code></pre>
-                    </div>
-                </div>
-            </section>
-        </main>
-
-        <!-- Input area -->
-        <footer class="input-area">
+        <!-- Chat Input (replaces file upload) -->
+        <div id="chat-controls">
             <form id="chat-form">
-                <input
-                    type="text"
-                    id="chat-input"
-                    placeholder="Say anything... (ask questions, request code, describe what to build)"
-                    autocomplete="off"
-                >
-                <button type="submit" id="send-btn">
-                    <span class="btn-text">Send</span>
-                    <span class="btn-loading" hidden>Thinking...</span>
-                </button>
+                <input type="text" id="chat-input" placeholder="Type your message..." autocomplete="off">
+                <button type="submit" id="send-btn" class="button">Send</button>
             </form>
-        </footer>
+            <div id="status-area">
+                <span id="status-indicator"></span>
+                <span id="status-text">Ready</span>
+            </div>
+        </div>
     </div>
 
-    <!-- Toast notifications -->
-    <div class="toast-container" id="toast-container"></div>
+    <!-- Right Panel: Dialog & Code -->
+    <div id="show">
+        <!-- Task Display -->
+        <div id="humanRequest">
+            <p id="Requesttext">Task: Type a message to start...</p>
+        </div>
 
-    <!-- Keyboard shortcut hint (shown briefly on load) -->
-    <div class="shortcut-hint" id="shortcut-hint" hidden>
-        <span>Ctrl+Enter</span> Send &nbsp;
-        <span>Ctrl+N</span> New tab &nbsp;
-        <span>Ctrl+D</span> Theme &nbsp;
-        <span>Ctrl+L</span> Clear
+        <!-- Dialog Body (agent conversations) -->
+        <div id="dialogBody"></div>
+
+        <!-- Speed Control (for animation speed) -->
+        <div id="speedcontrol">
+            <input type="range" id="speed" name="speed" min="1" max="100" value="80">
+            <label for="speed">Animation Speed</label>
+        </div>
+
+        <!-- Statistics -->
+        <div id="dialogStatistic">
+            <div class="stats-row">
+                <div class="info">
+                    <label>Agent</label>
+                    <p id="current_agent">-</p>
+                </div>
+                <div class="info">
+                    <label>Phase</label>
+                    <p id="current_phase">-</p>
+                </div>
+                <div class="info">
+                    <label>Files</label>
+                    <p id="num_files">0</p>
+                </div>
+                <div class="info">
+                    <label>Messages</label>
+                    <p id="num_messages">0</p>
+                </div>
+                <div class="info">
+                    <label>Status</label>
+                    <p id="build_status">Idle</p>
+                </div>
+            </div>
+        </div>
     </div>
+
+    <!-- Code Panel (slides out) -->
+    <div id="code-panel" class="code-panel hidden">
+        <div class="code-panel-header">
+            <h3>Generated Code</h3>
+            <button id="close-code-panel">&times;</button>
+        </div>
+        <div id="file-tabs"></div>
+        <pre id="code-view"><code>// Code will appear here</code></pre>
+    </div>
+
+    <!-- View Code Button -->
+    <button id="view-code-btn" class="view-code-btn">View Code</button>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
-    <script src="/static/app.js"></script>
+    <script src="/static/chatdev-app.js"></script>
 </body>
 </html>
