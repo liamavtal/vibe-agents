@@ -108,42 +108,17 @@
                     <button class="theater-close-btn" id="theater-close" title="Close theater">&times;</button>
                 </h2>
                 <div class="theater-stage">
-                    <!-- Office background with desks -->
-                    <div class="office-floor"></div>
-                    <div class="office-desk desk-1"></div>
-                    <div class="office-desk desk-2"></div>
-                    <div class="office-desk desk-3"></div>
+                    <!-- ChatDev-style office background -->
+                    <img src="/static/theater/company.png" alt="Office" id="theater-office" class="theater-office-bg">
 
-                    <!-- Agent characters with speech bubbles -->
-                    <div class="theater-agent" data-agent="Router" style="top: 15%; left: 50%;">
-                        <div class="agent-speech-bubble" id="bubble-Router"></div>
-                        <img src="/static/avatars/router.png" alt="Router">
-                        <span class="agent-label">Router</span>
-                    </div>
-                    <div class="theater-agent" data-agent="Planner" style="top: 45%; left: 18%;">
-                        <div class="agent-speech-bubble" id="bubble-Planner"></div>
-                        <img src="/static/avatars/planner.png" alt="Planner">
-                        <span class="agent-label">Planner</span>
-                    </div>
-                    <div class="theater-agent" data-agent="Coder" style="top: 45%; left: 50%;">
-                        <div class="agent-speech-bubble" id="bubble-Coder"></div>
-                        <img src="/static/avatars/coder.png" alt="Coder">
-                        <span class="agent-label">Coder</span>
-                    </div>
-                    <div class="theater-agent" data-agent="Reviewer" style="top: 45%; left: 82%;">
-                        <div class="agent-speech-bubble" id="bubble-Reviewer"></div>
-                        <img src="/static/avatars/reviewer.png" alt="Reviewer">
-                        <span class="agent-label">Reviewer</span>
-                    </div>
-                    <div class="theater-agent" data-agent="Tester" style="top: 78%; left: 30%;">
-                        <div class="agent-speech-bubble" id="bubble-Tester"></div>
-                        <img src="/static/avatars/tester.png" alt="Tester">
-                        <span class="agent-label">Tester</span>
-                    </div>
-                    <div class="theater-agent" data-agent="Debugger" style="top: 78%; left: 70%;">
-                        <div class="agent-speech-bubble" id="bubble-Debugger"></div>
-                        <img src="/static/avatars/debugger.png" alt="Debugger">
-                        <span class="agent-label">Debugger</span>
+                    <!-- Animated arrow indicators (like ChatDev) -->
+                    <img src="/static/theater/right.png" id="theater-arrow-right" class="theater-arrow blinking-animation" style="display: none;">
+                    <img src="/static/theater/left.png" id="theater-arrow-left" class="theater-arrow blinking-animation" style="display: none;">
+
+                    <!-- Speech bubble overlay -->
+                    <div class="theater-speech-bubble" id="theater-speech-bubble">
+                        <div class="speech-agent-name" id="speech-agent-name"></div>
+                        <div class="speech-content" id="speech-content"></div>
                     </div>
                 </div>
             </section>

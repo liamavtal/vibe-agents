@@ -1846,8 +1846,8 @@ body {
 .theater-panel {
     display: flex;
     flex-direction: column;
-    min-width: 320px;
-    max-width: 400px;
+    min-width: 400px;
+    max-width: 500px;
     border-left: 1px solid var(--border);
     background: var(--bg-secondary);
 }
@@ -1880,182 +1880,110 @@ body {
     color: white;
 }
 
-/* Office Stage */
+/* Office Stage - ChatDev Style */
 .theater-stage {
     position: relative;
     flex: 1;
-    min-height: 400px;
+    min-height: 500px;
     overflow: hidden;
-    /* Pixel art style office background */
-    background:
-        linear-gradient(180deg, #87CEEB 0%, #87CEEB 30%, #90EE90 30%, #228B22 100%);
-    image-rendering: pixelated;
+    background: #f5f5f5;
 }
 
-/* Office floor pattern */
-.office-floor {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 70%;
-    background:
-        repeating-linear-gradient(
-            90deg,
-            #DEB887 0px,
-            #DEB887 20px,
-            #D2B48C 20px,
-            #D2B48C 40px
-        );
-    border-top: 4px solid #8B4513;
-}
-
-/* Desks */
-.office-desk {
-    position: absolute;
-    width: 60px;
-    height: 30px;
-    background: linear-gradient(180deg, #8B4513 0%, #654321 100%);
-    border: 2px solid #4a2c0a;
-    border-radius: 4px;
-    box-shadow: 0 4px 0 #3d2409;
-}
-
-.desk-1 { bottom: 55%; left: 15%; }
-.desk-2 { bottom: 55%; left: 42%; }
-.desk-3 { bottom: 55%; left: 70%; }
-
-/* Layout adjustment when theater is open */
-.main.has-theater {
-    grid-template-columns: 1fr 360px 1fr;
-}
-
-/* Agent characters in theater */
-.theater-agent {
-    position: absolute;
-    transform: translate(-50%, -50%);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    z-index: 5;
-    transition: transform 0.3s ease;
-}
-
-.theater-agent img {
-    width: 56px;
-    height: 56px;
-    border-radius: 50%;
-    border: 3px solid #fff;
-    background: #fff;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-    transition: all 0.2s ease;
-    object-fit: cover;
+/* ChatDev office background image */
+.theater-office-bg {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    object-position: center;
     image-rendering: auto;
 }
 
-/* Agent label */
-.theater-agent .agent-label {
-    font-size: 0.625rem;
-    font-weight: 700;
-    color: #fff;
-    text-transform: uppercase;
-    background: rgba(0, 0, 0, 0.7);
-    padding: 2px 6px;
-    border-radius: 3px;
-    margin-top: 4px;
-    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+/* Animated arrows that point to active agent */
+.theater-arrow {
+    position: absolute;
+    width: 40px;
+    height: 40px;
+    z-index: 10;
+    pointer-events: none;
+    transition: top 0.3s ease, left 0.3s ease;
 }
 
-/* Speech bubble */
-.agent-speech-bubble {
+/* Blinking animation for arrows */
+.blinking-animation {
+    animation: arrowBlink 0.8s ease-in-out infinite;
+}
+
+@keyframes arrowBlink {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.6; transform: scale(1.1); }
+}
+
+/* Speech bubble overlay */
+.theater-speech-bubble {
     position: absolute;
-    bottom: 100%;
-    left: 50%;
-    transform: translateX(-50%);
-    background: #fff;
-    color: #333;
-    padding: 8px 12px;
-    border-radius: 12px;
-    font-size: 0.6875rem;
-    line-height: 1.3;
-    max-width: 150px;
-    min-width: 80px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-    margin-bottom: 8px;
+    top: 10px;
+    left: 10px;
+    background: white;
+    border: 2px solid #333;
+    border-radius: 15px;
+    padding: 10px 15px;
+    max-width: 200px;
+    min-width: 120px;
+    box-shadow: 3px 3px 0 rgba(0,0,0,0.2);
+    z-index: 20;
     opacity: 0;
     visibility: hidden;
-    transition: all 0.3s ease;
-    text-align: center;
-    word-wrap: break-word;
+    transition: opacity 0.3s ease;
 }
 
-/* Speech bubble arrow */
-.agent-speech-bubble::after {
-    content: '';
-    position: absolute;
-    bottom: -8px;
-    left: 50%;
-    transform: translateX(-50%);
-    border: 8px solid transparent;
-    border-top-color: #fff;
-    border-bottom: 0;
-}
-
-/* Active agent animations */
-.theater-agent.active {
-    animation: agentBounce 0.5s ease infinite;
-}
-
-.theater-agent.active img {
-    border-color: var(--accent);
-    box-shadow: 0 0 20px rgba(88, 166, 255, 0.6), 0 4px 8px rgba(0, 0, 0, 0.3);
-}
-
-.theater-agent.active .agent-speech-bubble {
+.theater-speech-bubble.active {
     opacity: 1;
     visibility: visible;
 }
 
-@keyframes agentBounce {
-    0%, 100% { transform: translate(-50%, -50%); }
-    50% { transform: translate(-50%, -55%); }
+/* Speech bubble tail */
+.theater-speech-bubble::after {
+    content: '';
+    position: absolute;
+    bottom: -15px;
+    left: 20px;
+    border: 10px solid transparent;
+    border-top-color: white;
+    border-bottom: 0;
 }
 
-/* Agent-specific colors when active */
-.theater-agent[data-agent="Router"].active img { border-color: var(--router-color); box-shadow: 0 0 20px rgba(121, 192, 255, 0.6); }
-.theater-agent[data-agent="Planner"].active img { border-color: var(--planner-color); box-shadow: 0 0 20px rgba(163, 113, 247, 0.6); }
-.theater-agent[data-agent="Coder"].active img { border-color: var(--coder-color); box-shadow: 0 0 20px rgba(88, 166, 255, 0.6); }
-.theater-agent[data-agent="Reviewer"].active img { border-color: var(--reviewer-color); box-shadow: 0 0 20px rgba(63, 185, 80, 0.6); }
-.theater-agent[data-agent="Tester"].active img { border-color: var(--tester-color); box-shadow: 0 0 20px rgba(210, 153, 34, 0.6); }
-.theater-agent[data-agent="Debugger"].active img { border-color: var(--debugger-color); box-shadow: 0 0 20px rgba(249, 117, 131, 0.6); }
+.theater-speech-bubble::before {
+    content: '';
+    position: absolute;
+    bottom: -18px;
+    left: 18px;
+    border: 12px solid transparent;
+    border-top-color: #333;
+    border-bottom: 0;
+}
 
-/* Agent-specific colors when active */
-.theater-agent[data-agent="Router"].active img { border-color: var(--router-color); box-shadow: 0 4px 30px rgba(121, 192, 255, 0.5); }
-.theater-agent[data-agent="Router"].active .agent-name { color: var(--router-color); border-color: var(--router-color); }
-.theater-agent[data-agent="Router"].active .agent-pulse { border-color: var(--router-color); }
+.speech-agent-name {
+    font-weight: 700;
+    font-size: 0.75rem;
+    color: var(--accent);
+    margin-bottom: 4px;
+    text-transform: uppercase;
+}
 
-.theater-agent[data-agent="Planner"].active img { border-color: var(--planner-color); box-shadow: 0 4px 30px rgba(163, 113, 247, 0.5); }
-.theater-agent[data-agent="Planner"].active .agent-name { color: var(--planner-color); border-color: var(--planner-color); }
-.theater-agent[data-agent="Planner"].active .agent-pulse { border-color: var(--planner-color); }
+.speech-content {
+    font-size: 0.6875rem;
+    color: #333;
+    line-height: 1.4;
+    word-wrap: break-word;
+}
 
-.theater-agent[data-agent="Coder"].active img { border-color: var(--coder-color); box-shadow: 0 4px 30px rgba(88, 166, 255, 0.5); }
-.theater-agent[data-agent="Coder"].active .agent-name { color: var(--coder-color); border-color: var(--coder-color); }
-.theater-agent[data-agent="Coder"].active .agent-pulse { border-color: var(--coder-color); }
-
-.theater-agent[data-agent="Reviewer"].active img { border-color: var(--reviewer-color); box-shadow: 0 4px 30px rgba(63, 185, 80, 0.5); }
-.theater-agent[data-agent="Reviewer"].active .agent-name { color: var(--reviewer-color); border-color: var(--reviewer-color); }
-.theater-agent[data-agent="Reviewer"].active .agent-pulse { border-color: var(--reviewer-color); }
-
-.theater-agent[data-agent="Tester"].active img { border-color: var(--tester-color); box-shadow: 0 4px 30px rgba(210, 153, 34, 0.5); }
-.theater-agent[data-agent="Tester"].active .agent-name { color: var(--tester-color); border-color: var(--tester-color); }
-.theater-agent[data-agent="Tester"].active .agent-pulse { border-color: var(--tester-color); }
-
-.theater-agent[data-agent="Debugger"].active img { border-color: var(--debugger-color); box-shadow: 0 4px 30px rgba(249, 117, 131, 0.5); }
-.theater-agent[data-agent="Debugger"].active .agent-name { color: var(--debugger-color); border-color: var(--debugger-color); }
-.theater-agent[data-agent="Debugger"].active .agent-pulse { border-color: var(--debugger-color); }
+/* Layout adjustment when theater is open */
+.main.has-theater {
+    grid-template-columns: 1fr 450px 1fr;
+}
 
 /* Responsive theater */
-@media (max-width: 1100px) {
+@media (max-width: 1200px) {
     .main.has-theater {
         grid-template-columns: 1fr 1fr;
     }

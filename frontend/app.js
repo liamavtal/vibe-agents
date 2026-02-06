@@ -112,9 +112,26 @@ class VibeAgents {
         this.theaterPanel = document.getElementById('theater-panel');
         this.theaterToggleBtn = document.getElementById('theater-toggle');
         this.theaterCloseBtn = document.getElementById('theater-close');
-        this.theaterAgents = document.querySelectorAll('.theater-agent');
         this.theaterOpen = false;
         this.mainEl = document.querySelector('.main');
+
+        // ChatDev-style arrow elements
+        this.theaterArrowLeft = document.getElementById('theater-arrow-left');
+        this.theaterArrowRight = document.getElementById('theater-arrow-right');
+        this.theaterSpeechBubble = document.getElementById('theater-speech-bubble');
+        this.speechAgentName = document.getElementById('speech-agent-name');
+        this.speechContent = document.getElementById('speech-content');
+
+        // Agent coordinate mapping (positions on company.png image)
+        // Maps agent names to arrow positions - like ChatDev's coordSet
+        this.agentCoords = {
+            'Router': { arrow: 'right', top: '38%', left: '52%' },      // CEO on carpet
+            'Planner': { arrow: 'left', top: '62%', left: '12%' },      // Designing area
+            'Coder': { arrow: 'right', top: '82%', left: '38%' },       // Coding area
+            'Reviewer': { arrow: 'left', top: '55%', left: '78%' },     // Documenting area
+            'Tester': { arrow: 'right', top: '78%', left: '68%' },      // Testing area
+            'Debugger': { arrow: 'right', top: '85%', left: '32%' }     // Coding area (bottom)
+        };
 
         this.init();
     }
@@ -323,7 +340,7 @@ class VibeAgents {
         return icons[level] || icons.info;
     }
 
-    // ==================== Agent Theater ====================
+    // ==================== Agent Theater (ChatDev Style) ====================
 
     toggleTheater(show = null) {
         if (!this.theaterPanel) return;
@@ -344,41 +361,77 @@ class VibeAgents {
         if (this.theaterToggleBtn) {
             this.theaterToggleBtn.classList.toggle('active', this.theaterOpen);
         }
+
+        // Hide arrows and bubble when closing
+        if (!this.theaterOpen) {
+            this.clearTheaterAgents();
+        }
     }
 
+    // ChatDev-style: Move arrow to point at active agent
     setTheaterAgentActive(agentName, active = true, message = null) {
-        if (!this.theaterAgents) return;
+        if (!this.agentCoords[agentName]) return;
 
-        this.theaterAgents.forEach(el => {
-            if (el.dataset.agent === agentName) {
-                if (active) {
-                    el.classList.add('active');
-                    // Set speech bubble text
-                    const bubble = el.querySelector('.agent-speech-bubble');
-                    if (bubble && message) {
-                        bubble.textContent = message.length > 50 ? message.substring(0, 50) + '...' : message;
-                    } else if (bubble) {
-                        bubble.textContent = 'Thinking...';
-                    }
-                } else {
-                    el.classList.remove('active');
+        if (active) {
+            const coords = this.agentCoords[agentName];
+
+            // Show the appropriate arrow and hide the other
+            if (coords.arrow === 'left') {
+                if (this.theaterArrowLeft) {
+                    this.theaterArrowLeft.style.display = 'block';
+                    this.theaterArrowLeft.style.top = coords.top;
+                    this.theaterArrowLeft.style.left = coords.left;
+                }
+                if (this.theaterArrowRight) {
+                    this.theaterArrowRight.style.display = 'none';
+                }
+            } else {
+                if (this.theaterArrowRight) {
+                    this.theaterArrowRight.style.display = 'block';
+                    this.theaterArrowRight.style.top = coords.top;
+                    this.theaterArrowRight.style.left = coords.left;
+                }
+                if (this.theaterArrowLeft) {
+                    this.theaterArrowLeft.style.display = 'none';
                 }
             }
-        });
+
+            // Show speech bubble with agent name and message
+            if (this.theaterSpeechBubble) {
+                this.theaterSpeechBubble.classList.add('active');
+                if (this.speechAgentName) {
+                    this.speechAgentName.textContent = agentName;
+                    this.speechAgentName.style.color = this.getAgentColor(agentName);
+                }
+                if (this.speechContent) {
+                    const text = message || 'Thinking...';
+                    this.speechContent.textContent = text.length > 80 ? text.substring(0, 80) + '...' : text;
+                }
+            }
+        } else {
+            // When deactivating, we don't immediately hide - let clearTheaterAgents handle that
+        }
     }
 
     updateTheaterBubble(agentName, text) {
-        const bubble = document.getElementById(`bubble-${agentName}`);
-        if (bubble) {
-            bubble.textContent = text.length > 60 ? text.substring(0, 60) + '...' : text;
+        if (this.speechContent) {
+            const truncated = text.length > 100 ? text.substring(0, 100) + '...' : text;
+            this.speechContent.textContent = truncated;
         }
     }
 
     clearTheaterAgents() {
-        if (!this.theaterAgents) return;
-        this.theaterAgents.forEach(el => el.classList.remove('active'));
-        if (this.arrowLeft) this.arrowLeft.hidden = true;
-        if (this.arrowRight) this.arrowRight.hidden = true;
+        // Hide both arrows
+        if (this.theaterArrowLeft) {
+            this.theaterArrowLeft.style.display = 'none';
+        }
+        if (this.theaterArrowRight) {
+            this.theaterArrowRight.style.display = 'none';
+        }
+        // Hide speech bubble
+        if (this.theaterSpeechBubble) {
+            this.theaterSpeechBubble.classList.remove('active');
+        }
     }
 
 
